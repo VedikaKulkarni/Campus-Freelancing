@@ -497,3 +497,132 @@
     height: 60%;
   }
 }
+
+/* Real-time Google Meet sync card and modal layouts */
+.chat-message-row.system-meeting-align {
+  align-items: center;
+  margin: 16px 0;
+}
+
+.chat-meeting-card {
+  width: 320px;
+  max-width: 90%;
+  background: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), var(--chat-shadow);
+  padding: 20px;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.chat-meeting-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.1), var(--chat-shadow);
+}
+
+.card-top-glow {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.meeting-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 3px 8px;
+  border-radius: 100px;
+  display: inline-block;
+  border: 1.5px solid rgba(16, 185, 129, 0.25);
+  margin-bottom: 10px;
+}
+
+.meeting-card-header h4 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--chat-text);
+  line-height: 1.4;
+}
+
+.meeting-card-details {
+  font-size: 13px;
+  color: var(--chat-text);
+  margin-bottom: 16px;
+  border-left: 2px solid rgba(16, 185, 129, 0.3);
+  padding-left: 10px;
+}
+
+.chat-meeting-join-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 10px 0;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12.5px;
+  text-decoration: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.chat-meeting-join-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+
+.chat-meeting-join-btn:active {
+  transform: translateY(1px);
+}
+
+/* Glassmorphic Schedule Overlay Popup */
+.meeting-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(13, 14, 18, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: modal-fade 0.25s ease-out;
+}
+
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.meeting-modal-content {
+  width: 340px;
+  max-width: 90%;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), var(--chat-shadow);
+  position: relative;
+  animation: modal-zoom 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modal-zoom {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+

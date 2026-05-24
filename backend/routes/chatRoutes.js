@@ -10,4 +10,7 @@ router.get('/conversations/:userId', chatController.getUserConversations);
 router.get('/conversations/:conversationId/messages', chatController.getConversationMessages);
 router.post('/conversations/:conversationId/messages', chatController.sendMessageHttp);
 
+// Meeting endpoints
+router.post('/conversations/:conversationId/meetings', chatController.scheduleMeeting);
+
 module.exports = router;

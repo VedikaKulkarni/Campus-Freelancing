@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { MessageSquare, Send, X } from 'lucide-react';
+import { MessageSquare, Send, X, Calendar, Video, Clock } from 'lucide-react';
 import './ChatDrawer.css';
 
 interface Participant {
@@ -66,6 +66,11 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Scheduling states
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [meetingTopic, setMeetingTopic] = useState('');
+  const [meetingDate, setMeetingDate] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -233,6 +238,47 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
     setInputText('');
   };
 
+  // Handle Meeting Schedule Submit
+  const handleScheduleMeeting = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!meetingTopic.trim() || !meetingDate || !activeConversation || !userId) return;
+
+    const studentParticipant = activeConversation.participants.find(p => p.role === 'student');
+
+    const payload = {
+      conversationId: activeConversation._id,
+      topic: meetingTopic.trim(),
+      meetingDate,
+      clientId: userId,
+      studentId: studentParticipant ? studentParticipant.userId : '',
+      clientName: userName,
+      studentName: studentParticipant ? studentParticipant.name : 'Student'
+    };
+
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('schedule_meeting', payload);
+    } else {
+      // HTTP fallback
+      fetch(`http://localhost:5000/api/chat/conversations/${activeConversation._id}/meetings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            const data = await res.json();
+            setMessages(prev => [...prev, data.message]);
+            fetchConversations();
+          }
+        })
+        .catch(err => console.error('REST meeting schedule failed:', err));
+    }
+
+    setMeetingTopic('');
+    setMeetingDate('');
+    setIsScheduleModalOpen(false);
+  };
+
   // Helper: Format message timestamp
   const formatTime = (isoString?: string) => {
     if (!isoString) return '';
@@ -328,9 +374,20 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                   <h4>{getRecipientName(activeConversation)}</h4>
                   <p className="task-subtitle">📍 Contract: {activeConversation.taskTitle}</p>
                 </div>
-                <div className="online-badge">
-                  <span className="dot"></span>
-                  <span>Secure Escrow Room</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {userRole === 'client' && (
+                    <button 
+                      className="btn-primary"
+                      style={{ padding: '6px 14px', fontSize: '12px', background: '#10b981', borderColor: '#10b981', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '100px', fontWeight: 600 }}
+                      onClick={() => setIsScheduleModalOpen(true)}
+                    >
+                      <Calendar size={13} /> Schedule Meet
+                    </button>
+                  )}
+                  <div className="online-badge">
+                    <span className="dot"></span>
+                    <span>Secure Escrow Room</span>
+                  </div>
                 </div>
               </div>
 
@@ -338,6 +395,47 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
               <div className="chat-messages-scroll">
                 {messages.map((msg) => {
                   const isSentByMe = String(msg.senderId) === String(userId);
+                  const isMeetingMessage = msg.text.startsWith('[MEETING_SCHEDULED]');
+                  
+                  if (isMeetingMessage) {
+                    const parts = msg.text.replace('[MEETING_SCHEDULED] ', '').split('|');
+                    const topic = parts[0] || 'Sync Meeting';
+                    const dateString = parts[1] || '';
+                    const meetLink = parts[2] || '#';
+                    
+                    const formattedMeetDate = dateString ? new Date(dateString).toLocaleString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : 'Scheduled';
+
+                    return (
+                      <div key={msg._id} className="chat-message-row system-meeting-align">
+                        <div className="chat-meeting-card bg-glass">
+                          <div className="card-top-glow"></div>
+                          <div className="meeting-card-header">
+                            <span className="meeting-badge">📅 GOOGLE MEET SYNC</span>
+                            <h4>{topic}</h4>
+                          </div>
+                          <div className="meeting-card-details">
+                            <p style={{ margin: '0 0 4px', fontSize: '13px' }}><Clock size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> <strong>Time:</strong> {formattedMeetDate}</p>
+                            <p style={{ margin: 0, fontSize: '11px', color: 'var(--chat-text-muted)', marginTop: '4px' }}>Scheduled by {msg.senderName}</p>
+                          </div>
+                          <a 
+                            href={meetLink} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="chat-meeting-join-btn"
+                          >
+                            <Video size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} /> Join Google Meet
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div 
                       key={msg._id} 
@@ -372,6 +470,58 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                   </button>
                 </form>
               </div>
+
+              {/* Schedule Meeting Modal Glass Overlay */}
+              {isScheduleModalOpen && (
+                <div className="meeting-modal-overlay">
+                  <div className="meeting-modal-content bg-glass">
+                    <button className="modal-close-btn" style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: 'var(--chat-text)', cursor: 'pointer' }} onClick={() => setIsScheduleModalOpen(false)}>
+                      <X size={18} />
+                    </button>
+                    
+                    <div style={{ textAlign: 'left', marginBottom: '16px' }}>
+                      <span className="meeting-badge">📅 GOOGLE MEET SCHEDULE</span>
+                      <h4 style={{ margin: '6px 0 0', fontSize: '17px', color: 'var(--chat-text)' }}>Schedule Milestone Review</h4>
+                    </div>
+
+                    <form onSubmit={handleScheduleMeeting}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--chat-text-muted)' }}>Sync Topic / Milestone Name</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. Test Landing Page Escrow release"
+                            value={meetingTopic}
+                            onChange={(e) => setMeetingTopic(e.target.value)}
+                            style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--chat-border)', borderRadius: '8px', color: 'var(--chat-text)', outline: 'none', fontSize: '13px' }}
+                            required
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--chat-text-muted)' }}>Scheduled Date & Time</label>
+                          <input 
+                            type="datetime-local" 
+                            value={meetingDate}
+                            onChange={(e) => setMeetingDate(e.target.value)}
+                            style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--chat-border)', borderRadius: '8px', color: 'var(--chat-text)', outline: 'none', fontSize: '13px' }}
+                            required
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                          <button type="button" className="btn-secondary-dash" style={{ flex: 1, padding: '10px 0', fontSize: '13px' }} onClick={() => setIsScheduleModalOpen(false)}>
+                            Cancel
+                          </button>
+                          <button type="submit" className="btn-primary-dash" style={{ flex: 1, padding: '10px 0', background: '#10b981', borderColor: '#10b981', fontSize: '13px', fontWeight: 600 }}>
+                            Schedule Sync
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             /* Empty Chat State */
