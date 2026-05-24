@@ -1,0 +1,58 @@
+const mongoose = require('mongoose');
+
+const studentSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  mobileNumber: {
+    type: String,
+    required: true,
+  },
+  classOrYear: {
+    type: String,
+    required: true,
+  },
+  schoolOrCollegeName: {
+    type: String,
+    required: true,
+  },
+  enrollmentNumber: {
+    type: String,
+    required: true,
+  },
+  idCardImage: {
+    type: String, // Will store the URL/path to the uploaded image
+    required: true,
+  },
+  skills: {
+    type: [String],
+    default: [],
+  },
+  bio: {
+    type: String,
+    default: '',
+  },
+  projectLinks: {
+    type: [{
+      title: String,
+      url: String
+    }],
+    default: [],
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  }
+});
+
+module.exports = mongoose.model('Student', studentSchema);
