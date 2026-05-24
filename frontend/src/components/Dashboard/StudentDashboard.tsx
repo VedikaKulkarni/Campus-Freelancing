@@ -128,8 +128,8 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchStudentData = async () => {
       if (!userId || userRole !== 'student') {
-        console.warn('No active student session detected');
-        setLoadingProfile(false);
+        console.warn('No active student session detected, redirecting to login');
+        navigate('/');
         return;
       }
 

@@ -140,23 +140,8 @@ const ClientDashboard = () => {
   // Load Profile from Backend
   useEffect(() => {
     if (!userId || userRole !== 'client') {
-      // If not logged in as a client, fallback or redirect
-      console.warn('Unauthorized access to client dashboard, loading mocks');
-      setClientProfile({
-        name: 'Jane Cooper',
-        email: 'jane.cooper@startup.co',
-        mobileNumber: '+1 (555) 382-9018',
-        companyName: 'Nova Technologies LLC',
-        industryOrWorkType: 'Software Development',
-      });
-      setProfileForm({
-        name: 'Jane Cooper',
-        email: 'jane.cooper@startup.co',
-        mobileNumber: '+1 (555) 382-9018',
-        companyName: 'Nova Technologies LLC',
-        industryOrWorkType: 'Software Development',
-      });
-      setLoadingProfile(false);
+      console.warn('Unauthorized access to client dashboard, redirecting to login');
+      navigate('/');
       return;
     }
 
