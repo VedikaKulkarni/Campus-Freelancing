@@ -1,4 +1,4 @@
-export type Tab = 'overview' | 'explore' | 'applications' | 'portfolio' | 'ledger' | 'ongoing';
+export type Tab = 'overview' | 'explore' | 'applications' | 'portfolio' | 'ledger' | 'ongoing' | 'completed';
 
 export interface ProjectLink {
   title: string;
@@ -15,6 +15,8 @@ export interface StudentProfile {
   skills: string[];
   bio: string;
   projectLinks: ProjectLink[];
+  stripeAccountId?: string;
+  stripeOnboardingComplete?: boolean;
 }
 
 export interface Task {
@@ -32,6 +34,14 @@ export interface Task {
   createdAt?: string;
 }
 
+export interface DeliverableSubmission {
+  githubUrl: string;
+  description: string;
+  screenshots: string[];
+  videoUrl: string;
+  submittedAt: string | null;
+}
+
 export interface Application {
   _id: string;
   taskId: any; // populated or object
@@ -39,4 +49,6 @@ export interface Application {
   projectLinks: ProjectLink[];
   status: 'Pending' | 'Interviewing' | 'Hired' | 'Rejected';
   appliedAt: string;
+  paymentStatus?: 'Unpaid' | 'Held in Escrow' | 'Released' | 'Refunded';
+  deliverables?: DeliverableSubmission;
 }

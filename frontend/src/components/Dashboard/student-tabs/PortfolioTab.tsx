@@ -16,6 +16,7 @@ interface PortfolioTabProps {
   setNewLinkTitle: (val: string) => void;
   newLinkUrl: string;
   setNewLinkUrl: (val: string) => void;
+  onStripeOnboard?: () => void;
 }
 
 export const PortfolioTab: React.FC<PortfolioTabProps> = ({
@@ -31,7 +32,8 @@ export const PortfolioTab: React.FC<PortfolioTabProps> = ({
   newLinkTitle,
   setNewLinkTitle,
   newLinkUrl,
-  setNewLinkUrl
+  setNewLinkUrl,
+  onStripeOnboard
 }) => {
   return (
     <div className="screen-fade-in portfolio-screen">
@@ -193,6 +195,60 @@ export const PortfolioTab: React.FC<PortfolioTabProps> = ({
               <Plus size={14} /> Upload Link
             </button>
           </form>
+
+          {/* Stripe Connect Card */}
+          <div className="stripe-connect-card" style={{
+            marginTop: '24px',
+            padding: '20px',
+            background: 'rgba(99, 102, 241, 0.05)',
+            border: '1px solid rgba(99, 102, 241, 0.15)',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
+          }}>
+            <h4 style={{ margin: '0 0 8px', color: 'var(--dash-text-h)', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              💳 Secure Stripe Payouts Setup
+            </h4>
+            
+            {studentProfile.stripeOnboardingComplete ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <p style={{ margin: 0, fontSize: '13px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <strong>✓ Bank Account Linked Successfully via Stripe Express!</strong>
+                </p>
+                <span style={{ fontSize: '12px', color: 'var(--dash-text)' }}>
+                  You are fully enabled to receive real-time direct deposit payouts when clients approve your milestones.
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--dash-text)' }}>
+                  Set up your debit card or checking bank details to accept secure milestone escrow payouts from clients.
+                </p>
+                
+                <button 
+                  type="button" 
+                  onClick={onStripeOnboard} 
+                  className="btn-primary-dash"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                    borderColor: '#4f46e5',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    width: '100%',
+                    padding: '10px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  Connect Bank via Stripe Express
+                </button>
+                <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)', textAlign: 'center' }}>
+                  Onboarding is processed securely by Stripe. No setup fees.
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

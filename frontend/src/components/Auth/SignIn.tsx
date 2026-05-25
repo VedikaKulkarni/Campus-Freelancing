@@ -30,10 +30,10 @@ const SignIn = ({ role }: SignInProps) => {
       });
       const data = await response.json();
       if (response.ok) {
-        // Save user info to localStorage
-        localStorage.setItem('userId', data.userId);
-        localStorage.setItem('userRole', data.userRole);
-        localStorage.setItem('userEmail', formData.email);
+        // Save user info to sessionStorage
+        sessionStorage.setItem('userId', data.userId);
+        sessionStorage.setItem('userRole', data.userRole);
+        sessionStorage.setItem('userEmail', formData.email);
         
         alert(`Successfully Logged In as ${role}!`);
         if (role === 'client') {

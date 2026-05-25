@@ -49,6 +49,14 @@ const studentSchema = new mongoose.Schema({
     }],
     default: [],
   },
+  stripeAccountId: {
+    type: String,
+    default: null
+  },
+  stripeOnboardingComplete: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now,

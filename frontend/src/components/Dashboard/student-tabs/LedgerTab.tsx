@@ -73,41 +73,47 @@ export const LedgerTab: React.FC<LedgerTabProps> = ({
               </tr>
             </thead>
             <tbody>
-              {applications.filter(a => a.status === 'Hired').map((app, idx) => (
-                <tr key={app._id}>
-                  <td className="mono-text" style={{ fontSize: '12px' }}>CL-TXN-98{idx}2</td>
-                  <td>
-                    <strong>{app.taskId?.title}</strong>
+              {applications.filter(a => a.status === 'Hired' || a.paymentStatus === 'Held in Escrow' || a.paymentStatus === 'Released').map((app, idx) => {
+                const status = app.paymentStatus || 'Unpaid';
+                return (
+                  <tr key={app._id}>
+                    <td className="mono-text" style={{ fontSize: '12px' }}>CL-TXN-{status === 'Released' ? '98' : '21'}{idx}{idx + 2}</td>
+                    <td>
+                      <strong>{app.taskId?.title}</strong>
+                    </td>
+                    <td>
+                      <strong style={{ color: status === 'Released' ? '#10b981' : status === 'Held in Escrow' ? '#3b82f6' : 'var(--dash-text)' }}>
+                        ${app.taskId?.budget}
+                      </strong>
+                    </td>
+                    <td>
+                      {status === 'Released' && (
+                        <span className="escrow-status-pill released">
+                          <Check size={10} /> Payout Released
+                        </span>
+                      )}
+                      {status === 'Held in Escrow' && (
+                        <span className="escrow-status-pill escrow">
+                          <Clock size={10} /> Held in Escrow
+                        </span>
+                      )}
+                      {status === 'Unpaid' && (
+                        <span className="escrow-status-pill awaiting" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                          <Clock size={10} /> Awaiting Escrow
+                        </span>
+                      )}
+                    </td>
+                    <td>{new Date(app.appliedAt).toLocaleDateString()}</td>
+                  </tr>
+                );
+              })}
+              {applications.filter(a => a.status === 'Hired' || a.paymentStatus === 'Held in Escrow' || a.paymentStatus === 'Released').length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: 'var(--dash-text)' }}>
+                    No payment transactions or active escrow locks recorded yet.
                   </td>
-                  <td>
-                    <strong style={{ color: '#10b981' }}>${app.taskId?.budget}</strong>
-                  </td>
-                  <td>
-                    <span className="escrow-status-pill released">
-                      <Check size={10} /> Payout Released
-                    </span>
-                  </td>
-                  <td>{new Date(app.appliedAt).toLocaleDateString()}</td>
                 </tr>
-              ))}
-
-              {applications.filter(a => a.status === 'Interviewing' || a.status === 'Pending').map((app, idx) => (
-                <tr key={app._id}>
-                  <td className="mono-text" style={{ fontSize: '12px' }}>CL-TXN-21{idx}8</td>
-                  <td>
-                    <strong>{app.taskId?.title}</strong>
-                  </td>
-                  <td>
-                    <strong style={{ color: 'var(--dash-text)' }}>${app.taskId?.budget}</strong>
-                  </td>
-                  <td>
-                    <span className="escrow-status-pill escrow">
-                      <Clock size={10} /> Held in Escrow
-                    </span>
-                  </td>
-                  <td>{new Date(app.appliedAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

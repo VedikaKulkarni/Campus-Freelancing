@@ -129,4 +129,45 @@ router.put('/:id/status', async (req, res) => {
   }
 });
 
+// Fetch all applications for tasks posted by a specific client
+router.get('/client/:clientId', async (req, res) => {
+  try {
+    const tasks = await Task.find({ clientId: req.params.clientId });
+    const taskIds = tasks.map(t => t._id);
+    const applications = await Application.find({ taskId: { $in: taskIds } })
+      .populate('taskId')
+      .sort({ appliedAt: -1 });
+    res.status(200).json(applications);
+  } catch (error) {
+    console.error('Error fetching client applications:', error);
+    res.status(500).json({ message: 'Server error fetching client applications', error: error.message });
+  }
+});
+
+// Submit deliverables for a hired application
+router.put('/:id/submit-deliverables', async (req, res) => {
+  try {
+    const { githubUrl, description, screenshots, videoUrl } = req.body;
+    const application = await Application.findById(req.params.id);
+    
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    application.deliverables = {
+      githubUrl: githubUrl || '',
+      description: description || '',
+      screenshots: screenshots || [],
+      videoUrl: videoUrl || '',
+      submittedAt: new Date()
+    };
+
+    await application.save();
+    res.status(200).json({ message: 'Deliverables submitted successfully!', application });
+  } catch (error) {
+    console.error('Error submitting deliverables:', error);
+    res.status(500).json({ message: 'Server error submitting deliverables', error: error.message });
+  }
+});
+
 module.exports = router;

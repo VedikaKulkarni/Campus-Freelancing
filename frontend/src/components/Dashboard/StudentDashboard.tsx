@@ -42,6 +42,7 @@ import { OverviewTab } from './student-tabs/OverviewTab';
 import { ExploreTab } from './student-tabs/ExploreTab';
 import { ApplicationsTab } from './student-tabs/ApplicationsTab';
 import { OngoingTab } from './student-tabs/OngoingTab';
+import { CompletedTab } from './student-tabs/CompletedTab';
 import { PortfolioTab } from './student-tabs/PortfolioTab';
 import { LedgerTab } from './student-tabs/LedgerTab';
 
@@ -108,8 +109,8 @@ const StudentDashboard = () => {
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
 
-  const userId = localStorage.getItem('userId');
-  const userRole = localStorage.getItem('userRole');
+  const userId = sessionStorage.getItem('userId');
+  const userRole = sessionStorage.getItem('userRole');
 
   // Load Dashboard Data
   useEffect(() => {
@@ -123,6 +124,66 @@ const StudentDashboard = () => {
       }
     }
   }, [isDarkMode]);
+
+  // Verify Stripe connected account onboarding status if redirect returns
+  useEffect(() => {
+    const checkStripeStatus = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const stripeOnboard = params.get('stripe_onboard');
+      if (stripeOnboard === 'success' && userId) {
+        try {
+          const response = await fetch('http://localhost:5000/api/payments/check-onboard-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ studentId: userId })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.complete) {
+              alert('🎉 Congratulations! Your Stripe Connect Express account is fully connected and active for payouts!');
+            } else {
+              alert('Stripe account onboarding was not finished. Please make sure to complete all details to enable payouts.');
+            }
+            // Clear URL search params without page reload
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Reload profile data to get updated Stripe Connect status
+            const profileRes = await fetch(`http://localhost:5000/api/auth/student/${userId}`);
+            if (profileRes.ok) {
+              const freshProfile = await profileRes.json();
+              setStudentProfile(freshProfile);
+              setProfileForm(freshProfile);
+            }
+          }
+        } catch (err) {
+          console.error('Stripe check status error:', err);
+        }
+      }
+    };
+
+    checkStripeStatus();
+  }, [userId]);
+
+  // Setup Stripe Connect Express Onboarding redirect
+  const handleStripeOnboard = async () => {
+    if (!userId) return;
+    try {
+      const response = await fetch('http://localhost:5000/api/payments/onboard-student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: userId })
+      });
+      const data = await response.json();
+      if (response.ok && data.url) {
+        window.location.href = data.url; // Redirect to Stripe
+      } else {
+        alert(`Setup error: ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Stripe setup request error:', err);
+      alert('Failed to connect to Stripe onboarding server.');
+    }
+  };
 
   // Load Profile from Backend
   useEffect(() => {
@@ -177,35 +238,35 @@ const StudentDashboard = () => {
   }, [userId]);
 
   // Load Applications from Database
+  const fetchApplications = async () => {
+    if (!userId) {
+      setApplications([]);
+      setLoadingApps(false);
+      return;
+    }
+
+    try {
+      // Only show loading spinner on initial mount when applications are empty
+      const shouldShowLoading = applications.length === 0;
+      if (shouldShowLoading) {
+        setLoadingApps(true);
+      }
+      const response = await fetch(`http://localhost:5000/api/applications/student/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data);
+      } else {
+        throw new Error('Applications API failed');
+      }
+    } catch (err) {
+      console.warn('Backend applications unreachable, loading empty applications list', err);
+      setApplications([]);
+    } finally {
+      setLoadingApps(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchApplications = async () => {
-      if (!userId) {
-        setApplications([]);
-        setLoadingApps(false);
-        return;
-      }
-
-      try {
-        // Only show loading spinner on initial mount when applications are empty
-        const shouldShowLoading = applications.length === 0;
-        if (shouldShowLoading) {
-          setLoadingApps(true);
-        }
-        const response = await fetch(`http://localhost:5000/api/applications/student/${userId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setApplications(data);
-        } else {
-          throw new Error('Applications API failed');
-        }
-      } catch (err) {
-        console.warn('Backend applications unreachable, loading empty applications list', err);
-        setApplications([]);
-      } finally {
-        setLoadingApps(false);
-      }
-    };
-
     fetchApplications();
   }, [userId, activeTab]);
 
@@ -449,9 +510,9 @@ const StudentDashboard = () => {
 
   // Logout Handler
   const handleLogout = () => {
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
+    sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('userRole');
+    sessionStorage.removeItem('userEmail');
     alert('Logged out successfully.');
     navigate('/');
   };
@@ -468,11 +529,11 @@ const StudentDashboard = () => {
 
   // Dynamic calculations
   const totalEarnings = applications
-    .filter(a => a.status === 'Hired')
+    .filter(a => a.paymentStatus === 'Released')
     .reduce((sum, current) => sum + (current.taskId?.budget || 0), 0);
 
   const activeEscrow = applications
-    .filter(a => a.status === 'Interviewing' || a.status === 'Pending')
+    .filter(a => a.paymentStatus === 'Held in Escrow')
     .reduce((sum, current) => sum + (current.taskId?.budget || 0), 0);
 
   return (
@@ -532,8 +593,23 @@ const StudentDashboard = () => {
           >
             <Clock size={18} style={{ color: '#10b981' }} />
             <span>Ongoing Projects</span>
-            {applications.filter(a => a.status === 'Hired').length > 0 && (
-              <span className="badge-count" style={{ background: '#10b981' }}>{applications.filter(a => a.status === 'Hired').length}</span>
+            {applications.filter(a => a.status === 'Hired' && a.taskId?.status === 'In Progress').length > 0 && (
+              <span className="badge-count" style={{ background: '#10b981' }}>
+                {applications.filter(a => a.status === 'Hired' && a.taskId?.status === 'In Progress').length}
+              </span>
+            )}
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'completed' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('completed'); setMobileMenuOpen(false); }}
+          >
+            <CheckCircle size={18} style={{ color: '#a78bfa' }} />
+            <span>Completed Projects</span>
+            {applications.filter(a => a.status === 'Hired' && a.taskId?.status === 'Completed').length > 0 && (
+              <span className="badge-count" style={{ background: '#a78bfa' }}>
+                {applications.filter(a => a.status === 'Hired' && a.taskId?.status === 'Completed').length}
+              </span>
             )}
           </button>
 
@@ -587,6 +663,7 @@ const StudentDashboard = () => {
                 {activeTab === 'explore' && 'Browse Campus Board'}
                 {activeTab === 'applications' && 'Application Center'}
                 {activeTab === 'ongoing' && 'Ongoing Hired Projects'}
+                {activeTab === 'completed' && 'Completed Projects'}
                 {activeTab === 'portfolio' && 'Edit Student Portfolio'}
                 {activeTab === 'ledger' && 'Escrow Accounting'}
               </span>
@@ -697,6 +774,22 @@ const StudentDashboard = () => {
                   taskTitle: taskTitle
                 });
               }}
+              onReloadApplications={fetchApplications}
+            />
+          )}
+
+          {activeTab === 'completed' && (
+            <CompletedTab 
+              applications={applications}
+              setActiveTab={setActiveTab}
+              onChatWithClient={(clientId, clientName, taskId, taskTitle) => {
+                setActiveChatSession({
+                  targetId: clientId,
+                  targetName: clientName,
+                  taskId: taskId,
+                  taskTitle: taskTitle
+                });
+              }}
             />
           )}
 
@@ -715,6 +808,7 @@ const StudentDashboard = () => {
               setNewLinkTitle={setNewLinkTitle}
               newLinkUrl={newLinkUrl}
               setNewLinkUrl={setNewLinkUrl}
+              onStripeOnboard={handleStripeOnboard}
             />
           )}
 

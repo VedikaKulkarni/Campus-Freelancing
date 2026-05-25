@@ -77,4 +77,27 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Update task status (e.g. mark completed & close)
+router.put('/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['Open', 'In Progress', 'Completed', 'Draft'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    task.status = status;
+    await task.save();
+
+    res.status(200).json({ message: `Task status updated successfully to ${status}`, task });
+  } catch (error) {
+    console.error('Error updating task status:', error);
+    res.status(500).json({ message: 'Server error updating task status', error: error.message });
+  }
+});
+
 module.exports = router;

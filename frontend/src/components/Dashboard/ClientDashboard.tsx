@@ -31,7 +31,8 @@ import {
   Sparkles,
   ShieldCheck,
   Check,
-  ExternalLink
+  ExternalLink,
+  Video
 } from 'lucide-react';
 import './ClientDashboard.css';
 import { ChatDrawer } from '../Chat/ChatDrawer';
@@ -99,7 +100,8 @@ const ClientDashboard = () => {
 
   // Tasks and Ledger States
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [clientApplications, setClientApplications] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   // Stats Counters
   const [totalTasksCount, setTotalTasksCount] = useState(0);
@@ -133,9 +135,9 @@ const ClientDashboard = () => {
   const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
-  // Local storage credentials
-  const userId = localStorage.getItem('userId');
-  const userRole = localStorage.getItem('userRole');
+  // Session storage credentials
+  const userId = sessionStorage.getItem('userId');
+  const userRole = sessionStorage.getItem('userRole');
 
   // Load Profile from Backend
   useEffect(() => {
@@ -158,14 +160,14 @@ const ClientDashboard = () => {
           // Fallback mocks
           setClientProfile({
             name: 'Jane Cooper',
-            email: localStorage.getItem('userEmail') || 'jane.cooper@startup.co',
+            email: sessionStorage.getItem('userEmail') || 'jane.cooper@startup.co',
             mobileNumber: '+1 (555) 382-9018',
             companyName: 'Nova Technologies LLC',
             industryOrWorkType: 'Software Development',
           });
           setProfileForm({
             name: 'Jane Cooper',
-            email: localStorage.getItem('userEmail') || 'jane.cooper@startup.co',
+            email: sessionStorage.getItem('userEmail') || 'jane.cooper@startup.co',
             mobileNumber: '+1 (555) 382-9018',
             companyName: 'Nova Technologies LLC',
             industryOrWorkType: 'Software Development',
@@ -175,14 +177,14 @@ const ClientDashboard = () => {
         console.error('Network error fetching client profile, using mock fallbacks', err);
         setClientProfile({
           name: 'Jane Cooper',
-          email: localStorage.getItem('userEmail') || 'jane.cooper@startup.co',
+          email: sessionStorage.getItem('userEmail') || 'jane.cooper@startup.co',
           mobileNumber: '+1 (555) 382-9018',
           companyName: 'Nova Technologies LLC',
           industryOrWorkType: 'Software Development',
         });
         setProfileForm({
           name: 'Jane Cooper',
-          email: localStorage.getItem('userEmail') || 'jane.cooper@startup.co',
+          email: sessionStorage.getItem('userEmail') || 'jane.cooper@startup.co',
           mobileNumber: '+1 (555) 382-9018',
           companyName: 'Nova Technologies LLC',
           industryOrWorkType: 'Software Development',
@@ -194,6 +196,106 @@ const ClientDashboard = () => {
 
     fetchClientProfile();
   }, [userId, userRole]);
+
+  // Capture Stripe Checkout redirect success parameters
+  useEffect(() => {
+    const confirmEscrowPayment = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const paymentStatus = params.get('payment');
+      const appId = params.get('appId');
+
+      if (paymentStatus === 'success' && appId) {
+        try {
+          const response = await fetch('http://localhost:5000/api/payments/confirm-escrow-manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ applicationId: appId })
+          });
+          const data = await response.json();
+          if (response.ok) {
+            alert('💳 Escrow Secured! $' + data.app?.taskId?.budget + ' budget is locked in safeguards. Student freelancer is officially hired.');
+            // Reload list immediately
+            fetchClientApplications();
+          }
+          // Clear URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (err) {
+          console.error('Error verifying Stripe escrow deposit:', err);
+        }
+      }
+    };
+
+    confirmEscrowPayment();
+  }, [userId]);
+
+  // Fetch all applications associated with this client's tasks
+  const fetchClientApplications = async () => {
+    if (!userId) return;
+    try {
+      setLoadingPayments(true);
+      const response = await fetch(`http://localhost:5000/api/applications/client/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setClientApplications(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch client applications:', err);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userId && (activeTab === 'payments' || activeTab === 'overview')) {
+      fetchClientApplications();
+    }
+  }, [userId, activeTab]);
+
+  // Release Escrow Payout - Transfer platform balance to student Connected Express bank
+  const handleReleaseEscrow = async (appId: string) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/payments/release-escrow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId: appId })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert('🎉 Payout released successfully! Real-time direct deposit has been transferred to the student connect bank account.');
+        // Refresh ledger
+        fetchClientApplications();
+      } else {
+        alert(`Escrow release failed: ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Error releasing escrow payment:', err);
+      alert('Network error releasing escrow.');
+    }
+  };
+
+  // Fund Escrow - Redirect client to Stripe Checkout card payment
+  const handlePayProject = async (app: any) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/payments/fund-escrow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId: app._id,
+          taskBudget: app.taskId?.budget || 100,
+          taskTitle: app.taskId?.title || 'Milestone Gigs'
+        })
+      });
+      const data = await response.json();
+      if (response.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl; // Redirect client directly to Stripe card checkout
+      } else {
+        alert(`Setup error: ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Stripe Checkout session request error:', err);
+      alert('Failed to connect to payments server.');
+    }
+  };
 
   // Load client's tasks from database
   useEffect(() => {
@@ -387,6 +489,38 @@ const ClientDashboard = () => {
     }
   };
 
+  // Mark task as completed and close project
+  const handleCloseAndCompleteTask = async (taskId: string) => {
+    const confirmClose = window.confirm("Are you sure you want to finalize and close this project milestone? This will mark it as Completed across the platform.");
+    if (!confirmClose) return;
+
+    try {
+      if (!userId) {
+        // Mock fallback for offline session
+        alert('🎉 Project successfully marked as Completed and closed (Local Session)!');
+        setTasks(prevTasks => prevTasks.map(t => t.id === taskId ? { ...t, status: 'Completed' } : t));
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/tasks/${taskId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Completed' })
+      });
+      
+      if (response.ok) {
+        alert('🎉 Project successfully marked as Completed and closed!');
+        setTasks(prevTasks => prevTasks.map(t => t.id === taskId ? { ...t, status: 'Completed' } : t));
+      } else {
+        const data = await response.json();
+        alert(`Failed to update project status: ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Error updating task status:', err);
+      alert('Network error updating task status.');
+    }
+  };
+
   // Open applicants review modal
   const handleOpenReviewModal = async (task: Task) => {
     setReviewingTask(task);
@@ -424,44 +558,36 @@ const ClientDashboard = () => {
     }
   };
 
-  // Hire student action
+  // Hire student action - Triggers secure card payment through Stripe Checkout
   const handleHireStudent = async (appId: string) => {
-    if (!userId) {
-      alert('Hired Student (Simulated Session)! Application status updated to Hired.');
-      setTaskApplicants(taskApplicants.map(a => a._id === appId ? { ...a, status: 'Hired' } : a));
-      return;
-    }
-
+    if (!reviewingTask) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/applications/${appId}/status`, {
-        method: 'PUT',
+      const response = await fetch('http://localhost:5000/api/payments/fund-escrow', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Hired' })
+        body: JSON.stringify({
+          applicationId: appId,
+          taskBudget: reviewingTask.budget,
+          taskTitle: reviewingTask.title
+        })
       });
-      if (response.ok) {
-        alert('Student successfully Hired! Escrow payment has been designated.');
-        if (reviewingTask) {
-          const fresh = await fetch(`http://localhost:5000/api/applications/task/${reviewingTask.id}`);
-          if (fresh.ok) {
-            const data = await fresh.json();
-            setTaskApplicants(data);
-          }
-          // Update local tasks
-          setTasks(tasks.map(t => t.id === reviewingTask.id ? { ...t, status: 'In Progress' } : t));
-        }
+      const data = await response.json();
+      if (response.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl; // Redirect client directly to Stripe card checkout
       } else {
-        alert('Failed to update student applicant status.');
+        alert(`Setup error: ${data.message}`);
       }
     } catch (err) {
-      console.error('Error hiring student:', err);
+      console.error('Stripe Checkout session request error:', err);
+      alert('Failed to connect to payments server.');
     }
   };
 
   // Handle Logout
   const handleLogout = () => {
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
+    sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('userRole');
+    sessionStorage.removeItem('userEmail');
     alert('Logged out successfully.');
     navigate('/');
   };
@@ -980,7 +1106,7 @@ const ClientDashboard = () => {
             <div className="screen-fade-in manage-tasks-screen">
               <div className="screen-title-banner">
                 <h1>Manage Your Posted Gigs</h1>
-                <p>Track student applications, inspect work statuses, approve active milestone deliverables, and view project summaries.</p>
+                <p>Track project work statuses, finalize milestones, approve active deliverables, and close projects once finished.</p>
               </div>
 
               <div className="manage-tasks-list bg-glass">
@@ -991,7 +1117,6 @@ const ClientDashboard = () => {
                         <th>Project Task</th>
                         <th>Category</th>
                         <th>Budget</th>
-                        <th>Applicants</th>
                         <th>Deadline</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -1014,12 +1139,6 @@ const ClientDashboard = () => {
                             <span className="table-price">${task.budget}</span>
                           </td>
                           <td>
-                            <div className="applicants-cell">
-                              <span className="applicant-num">{task.applicants}</span>
-                              <span className="applicants-text">applied</span>
-                            </div>
-                          </td>
-                          <td>
                             <div className="table-date">
                               <Calendar size={14} />
                               <span>{task.deadline}</span>
@@ -1035,19 +1154,40 @@ const ClientDashboard = () => {
                             </span>
                           </td>
                           <td>
-                            {task.status === 'In Progress' || task.status === 'Completed' ? (
-                              <button 
-                                className="btn-table-action" 
-                                style={{ background: '#10b981', borderColor: '#10b981', color: '#fff' }}
-                                onClick={() => handleChatWithStudent(task)}
-                              >
-                                Chat with Student
-                              </button>
-                            ) : (
-                              <button className="btn-table-action" onClick={() => handleOpenReviewModal(task)}>
-                                Review {task.applicants > 0 ? `(${task.applicants})` : ''}
-                              </button>
-                            )}
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              {task.status === 'In Progress' && (
+                                <>
+                                  <button 
+                                    className="btn-table-action" 
+                                    style={{ background: '#10b981', borderColor: '#10b981', color: '#fff' }}
+                                    onClick={() => handleChatWithStudent(task)}
+                                  >
+                                    Chat with Student
+                                  </button>
+                                  <button 
+                                    className="btn-table-action" 
+                                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', borderColor: '#7c3aed', color: '#fff', fontWeight: 600 }}
+                                    onClick={() => handleCloseAndCompleteTask(task.id)}
+                                  >
+                                    Finalize & Close
+                                  </button>
+                                </>
+                              )}
+                              {task.status === 'Completed' && (
+                                <button 
+                                  className="btn-table-action" 
+                                  style={{ background: 'rgba(167, 139, 250, 0.12)', borderColor: 'rgba(167, 139, 250, 0.3)', color: '#a78bfa', cursor: 'default' }}
+                                  disabled
+                                >
+                                  Project Closed
+                                </button>
+                              )}
+                              {task.status !== 'In Progress' && task.status !== 'Completed' && (
+                                <button className="btn-table-action" onClick={() => handleOpenReviewModal(task)}>
+                                  Review {task.applicants > 0 ? `(${task.applicants})` : ''}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1155,6 +1295,9 @@ const ClientDashboard = () => {
           {/* ============================================================== */}
           {/* TAB 5: PAYMENTS LEDGER                                          */}
           {/* ============================================================== */}
+          {/* ============================================================== */}
+          {/* TAB 5: PAYMENTS LEDGER                                          */}
+          {/* ============================================================== */}
           {activeTab === 'payments' && (
             <div className="screen-fade-in payments-screen">
               <div className="screen-title-banner">
@@ -1167,8 +1310,8 @@ const ClientDashboard = () => {
                   <div className="fin-icon green"><DollarSign size={24} /></div>
                   <div className="fin-details">
                     <span>Released to Students</span>
-                    <h2>$500.00</h2>
-                    <p>1 Fully Complete Contract</p>
+                    <h2>${clientApplications.filter(a => a.paymentStatus === 'Released').reduce((sum, curr) => sum + (curr.taskId?.budget || 0), 0).toFixed(2)}</h2>
+                    <p>{clientApplications.filter(a => a.paymentStatus === 'Released').length} Complete Transactions</p>
                   </div>
                 </div>
 
@@ -1176,8 +1319,8 @@ const ClientDashboard = () => {
                   <div className="fin-icon blue"><Clock size={24} /></div>
                   <div className="fin-details">
                     <span>Held in Escrow Safeguard</span>
-                    <h2>$375.00</h2>
-                    <p>2 Active Projects</p>
+                    <h2>${clientApplications.filter(a => a.paymentStatus === 'Held in Escrow').reduce((sum, curr) => sum + (curr.taskId?.budget || 0), 0).toFixed(2)}</h2>
+                    <p>{clientApplications.filter(a => a.paymentStatus === 'Held in Escrow').length} Hired Gigs Active</p>
                   </div>
                 </div>
 
@@ -1195,7 +1338,7 @@ const ClientDashboard = () => {
               <div className="transactions-list bg-glass">
                 <div className="ledger-header">
                   <h3>Transaction Records</h3>
-                  <button className="btn-secondary flex-btn"><Sliders size={14} /> Filter Columns</button>
+                  <button className="btn-secondary flex-btn"><Sliders size={14} /> Live Sync Enabled</button>
                 </div>
 
                 <div className="table-responsive">
@@ -1208,32 +1351,94 @@ const ClientDashboard = () => {
                         <th>Milestone Amount</th>
                         <th>Escrow Status</th>
                         <th>Transaction Date</th>
+                        <th>Milestone Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {transactions.map((txn) => (
-                        <tr key={txn.id}>
-                          <td className="mono-text">{txn.id}</td>
+                      {clientApplications.filter(a => a.status === 'Hired').map((app) => (
+                        <tr key={app._id}>
+                          <td className="mono-text" style={{ fontSize: '12px' }}>CL-TXN-{app._id.slice(-4).toUpperCase()}</td>
                           <td>
-                            <strong>{txn.taskTitle}</strong>
+                            <strong>{app.taskId?.title || 'Untitled milestone'}</strong>
+                            {app.deliverables?.submittedAt && (
+                              <div style={{ marginTop: '8px', padding: '10px', background: 'rgba(99, 102, 241, 0.04)', border: '1px solid rgba(99, 102, 241, 0.15)', borderRadius: '8px', fontSize: '12px', textAlign: 'left' }}>
+                                <p style={{ margin: '0 0 4px', color: 'var(--dash-text-h)' }}><strong>✓ Deliverables Submitted:</strong></p>
+                                <p style={{ margin: '0 0 4px' }}>"{app.deliverables.description}"</p>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                                  <a href={app.deliverables.githubUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="10" width="10" xmlns="http://www.w3.org/2000/svg">
+                                      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
+                                      <path d="M9 18c-4.51 2-5-2-7-2"></path>
+                                    </svg>{' '}
+                                    GitHub <ExternalLink size={8} />
+                                  </a>
+                                  {app.deliverables.videoUrl && (
+                                    <a href={app.deliverables.videoUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                      <Video size={10} /> Video Demo <ExternalLink size={8} />
+                                    </a>
+                                  )}
+                                </div>
+                                {app.deliverables.screenshots && app.deliverables.screenshots.length > 0 && (
+                                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                                    {app.deliverables.screenshots.map((src: string, sIdx: number) => (
+                                      <img 
+                                        key={sIdx} 
+                                        src={src} 
+                                        alt="screenshot" 
+                                        style={{ width: '50px', height: '30px', objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                                        onClick={() => window.open(src)}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </td>
-                          <td>{txn.freelancerName}</td>
+                          <td>{app.studentName}</td>
                           <td>
-                            <span className="price-bold">${txn.amount.toFixed(2)}</span>
+                            <span className="price-bold">${app.taskId?.budget || 0}</span>
                           </td>
                           <td>
                             <span className={`escrow-status-pill ${
-                              txn.status === 'Released' ? 'released' :
-                              txn.status === 'In Escrow' ? 'escrow' : 'refunding'
-                            }`}>
-                              {txn.status === 'Released' && <Check size={12} />}
-                              {txn.status === 'In Escrow' && <Clock size={12} />}
-                              {txn.status}
+                              app.paymentStatus === 'Released' ? 'released' :
+                              app.paymentStatus === 'Held in Escrow' ? 'escrow' : 'unpaid'
+                            }`} style={app.paymentStatus !== 'Released' && app.paymentStatus !== 'Held in Escrow' ? { background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' } : undefined}>
+                              {app.paymentStatus === 'Released' && <Check size={12} />}
+                              {app.paymentStatus === 'Held in Escrow' && <Clock size={12} />}
+                              {app.paymentStatus || 'Unpaid'}
                             </span>
                           </td>
-                          <td>{txn.date}</td>
+                          <td>{new Date(app.appliedAt).toLocaleDateString()}</td>
+                          <td>
+                            {app.paymentStatus === 'Held in Escrow' ? (
+                              <button 
+                                className="btn-table-action" 
+                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderColor: '#059669', color: '#fff', fontWeight: 600 }}
+                                onClick={() => handleReleaseEscrow(app._id)}
+                              >
+                                Approve & Release Payout
+                              </button>
+                            ) : app.paymentStatus === 'Released' ? (
+                              <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 600 }}>✓ Released to Bank</span>
+                            ) : (
+                              <button 
+                                className="btn-table-action" 
+                                style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', borderColor: '#2563eb', color: '#fff', fontWeight: 600 }}
+                                onClick={() => handlePayProject(app)}
+                              >
+                                Pay & Fund Escrow
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
+                      {clientApplications.filter(a => a.status === 'Hired').length === 0 && (
+                        <tr>
+                          <td colSpan={7} style={{ textAlign: 'center', padding: '30px' }}>
+                            <p style={{ margin: 0, color: 'var(--dash-text)' }}>No ongoing hired milestone transactions found. Hire candidates to start escrow contracts.</p>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

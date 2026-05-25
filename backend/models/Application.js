@@ -40,6 +40,34 @@ const applicationSchema = new mongoose.Schema({
     enum: ['Pending', 'Interviewing', 'Hired', 'Rejected'],
     default: 'Pending',
   },
+  paymentStatus: {
+    type: String,
+    enum: ['Unpaid', 'Held in Escrow', 'Released', 'Refunded'],
+    default: 'Unpaid'
+  },
+  stripePaymentIntentId: {
+    type: String,
+    default: null
+  },
+  stripeTransferId: {
+    type: String,
+    default: null
+  },
+  escrowFundedAt: {
+    type: Date,
+    default: null
+  },
+  escrowReleasedAt: {
+    type: Date,
+    default: null
+  },
+  deliverables: {
+    githubUrl: { type: String, default: '' },
+    description: { type: String, default: '' },
+    screenshots: { type: [String], default: [] },
+    videoUrl: { type: String, default: '' },
+    submittedAt: { type: Date, default: null }
+  },
   appliedAt: {
     type: Date,
     default: Date.now,
