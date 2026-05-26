@@ -17,6 +17,7 @@ interface PortfolioTabProps {
   newLinkUrl: string;
   setNewLinkUrl: (val: string) => void;
   onStripeOnboard?: () => void;
+  onProfileUpdate?: (updatedProfile: StudentProfile) => void;
 }
 
 export const PortfolioTab: React.FC<PortfolioTabProps> = ({
@@ -33,8 +34,59 @@ export const PortfolioTab: React.FC<PortfolioTabProps> = ({
   setNewLinkTitle,
   newLinkUrl,
   setNewLinkUrl,
-  onStripeOnboard
+  onStripeOnboard,
+  onProfileUpdate
 }) => {
+  const [reuploading, setReuploading] = React.useState(false);
+  const [newIdCard, setNewIdCard] = React.useState('');
+  const [newIdCardName, setNewIdCardName] = React.useState('');
+
+  const handleReuploadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewIdCardName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewIdCard(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleReuploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newIdCard) {
+      alert('Please select an ID Card image to upload.');
+      return;
+    }
+
+    setReuploading(true);
+    const userId = sessionStorage.getItem('userId');
+    try {
+      const response = await fetch(`http://localhost:5000/api/auth/student/reupload/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idCardImage: newIdCard })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message || 'ID Card re-uploaded successfully!');
+        if (data.student && onProfileUpdate) {
+          onProfileUpdate(data.student);
+        }
+        setNewIdCard('');
+        setNewIdCardName('');
+      } else {
+        alert(`Verification Failed: ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Re-upload failed:', err);
+      alert('Network error. Failed to connect to server.');
+    } finally {
+      setReuploading(false);
+    }
+  };
+
   return (
     <div className="screen-fade-in portfolio-screen">
       <div className="screen-title-banner">
@@ -48,6 +100,113 @@ export const PortfolioTab: React.FC<PortfolioTabProps> = ({
         <form className="portfolio-form bg-glass" onSubmit={handleProfileSubmit}>
           <h3>Account Portfolio Details</h3>
           <p>Credentials that persist to verified student directory searches.</p>
+
+          {/* Verification Status Alerts */}
+          {studentProfile.verificationStatus === 'verified' && (
+            <div style={{
+              margin: '12px 0 20px',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background: 'rgba(16, 185, 129, 0.06)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              color: '#10b981',
+              fontSize: '13px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              🎉 <strong>Verification Status:</strong> Verified Student Account (ID Approved)
+            </div>
+          )}
+
+          {studentProfile.verificationStatus === 'pending' && (
+            <div style={{
+              margin: '12px 0 20px',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background: 'rgba(245, 158, 11, 0.06)',
+              border: '1px solid rgba(245, 158, 11, 0.2)',
+              color: '#f59e0b',
+              fontSize: '13px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              🔍 <strong>Verification Status:</strong> Processing Automated OCR Validation...
+            </div>
+          )}
+
+          {studentProfile.verificationStatus === 'rejected' && (
+            <div style={{
+              margin: '12px 0 20px',
+              padding: '16px',
+              borderRadius: '8px',
+              background: 'rgba(239, 68, 68, 0.05)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: '#ef4444',
+              fontSize: '13px'
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                ❌ Verification Rejected
+              </div>
+              <p style={{ margin: '0 0 12px', color: 'rgba(255, 255, 255, 0.7)', fontSize: '12.5px', lineHeight: '1.4' }}>
+                {studentProfile.rejectionReason || 'The uploaded student ID card could not be validated. Make sure your name and college match exactly.'}
+              </p>
+              
+              <div style={{ marginTop: '12px' }}>
+                <label style={{ display: 'block', fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Re-upload Clear ID Card Image
+                </label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <label style={{
+                    flex: 1,
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px dashed rgba(239, 68, 68, 0.3)',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    fontSize: '12.5px',
+                    textAlign: 'center',
+                    color: newIdCard ? '#ef4444' : 'rgba(255, 255, 255, 0.5)',
+                    transition: 'all 0.2s',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {newIdCardName ? `Selected: ${newIdCardName}` : 'Choose new ID image...'}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      onChange={handleReuploadChange} 
+                    />
+                  </label>
+                  <button 
+                    type="button"
+                    onClick={handleReuploadSubmit}
+                    disabled={reuploading || !newIdCard}
+                    style={{
+                      background: '#ef4444',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      cursor: newIdCard ? 'pointer' : 'not-allowed',
+                      opacity: newIdCard ? 1 : 0.5,
+                      transition: 'all 0.2s',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {reuploading ? 'Processing...' : 'Verify Now'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {loadingProfile ? (
             <p>Loading database credentials...</p>

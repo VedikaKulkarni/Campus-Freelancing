@@ -20,6 +20,7 @@ interface ExploreTabProps {
   skillFilter: string;
   setSkillFilter: (val: string) => void;
   handleOpenApplyModal: (task: Task) => void;
+  studentProfile?: any;
 }
 
 export const ExploreTab: React.FC<ExploreTabProps> = ({
@@ -32,7 +33,8 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
   setSelectedCategory,
   skillFilter,
   setSkillFilter,
-  handleOpenApplyModal
+  handleOpenApplyModal,
+  studentProfile
 }) => {
   // Explore Filter Actions
   const filteredTasks = tasks.filter((task) => {
@@ -131,6 +133,26 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
                       <CheckCircle size={14} className="icon-success" />
                       <span>Applied</span>
                     </span>
+                  ) : studentProfile && studentProfile.verificationStatus !== 'verified' ? (
+                    <button 
+                      className="btn-apply-gig disabled-verification"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        color: 'rgba(255, 255, 255, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        cursor: 'not-allowed',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        transition: 'all 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title={`Cannot apply: Account verification status is "${studentProfile.verificationStatus || 'pending'}"`}
+                      disabled
+                    >
+                      🔒 Lock Pending
+                    </button>
                   ) : (
                     <button 
                       className="btn-apply-gig"

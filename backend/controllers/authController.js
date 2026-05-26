@@ -17,6 +17,64 @@ exports.registerStudent = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // 100% Automated Verification Engine
+    let verificationStatus = 'pending';
+    let rejectionReason = '';
+
+    const academicDomains = ['.edu', '.ac.in', '.edu.in', '.res.in'];
+    const isAcademicEmail = academicDomains.some(domain => email.toLowerCase().endsWith(domain));
+
+    if (isAcademicEmail) {
+      verificationStatus = 'verified';
+    } else if (idCardImage && idCardImage.startsWith('data:image')) {
+      try {
+        const Tesseract = require('tesseract.js');
+        const base64Data = idCardImage.replace(/^data:image\/\w+;base64,/, '');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        
+        const ocrResult = await Tesseract.recognize(imageBuffer, 'eng');
+        const text = ocrResult.data.text || '';
+        const normalizedText = text.toLowerCase();
+        
+        // 1. Name Match
+        const normalizedName = name.toLowerCase();
+        const nameWords = normalizedName.split(/\s+/).filter(w => w.length > 2);
+        const nameMatched = normalizedText.includes(normalizedName) || 
+                            (nameWords.length > 0 && nameWords.every(w => normalizedText.includes(w)));
+                            
+        // 2. College Match
+        const normalizedCollege = schoolOrCollegeName.toLowerCase();
+        const collegeWords = normalizedCollege.split(/\s+/).filter(w => w.length > 3 && w !== 'college' && w !== 'university');
+        const collegeMatched = normalizedText.includes(normalizedCollege) || 
+                               (collegeWords.length > 0 && collegeWords.some(w => normalizedText.includes(w)));
+                               
+        // 3. Enrollment Match
+        const normalizedEnrollment = enrollmentNumber.toLowerCase();
+        const enrollmentMatched = normalizedText.includes(normalizedEnrollment);
+        
+        // Evaluate OCR checks
+        if (!nameMatched) {
+          verificationStatus = 'rejected';
+          rejectionReason = `Auto-verification failed: Could not detect your name "${name}" on the uploaded student ID card image. Please ensure the image is clear and the name matches your profile.`;
+        } else if (!collegeMatched) {
+          verificationStatus = 'rejected';
+          rejectionReason = `Auto-verification failed: Could not detect your institution name "${schoolOrCollegeName}" on the ID card. Please ensure the card text is clear.`;
+        } else if (!enrollmentMatched) {
+          verificationStatus = 'rejected';
+          rejectionReason = `Auto-verification failed: Enrollment number "${enrollmentNumber}" was not found on the ID card. Please ensure the number matches exactly.`;
+        } else {
+          verificationStatus = 'verified';
+        }
+      } catch (ocrErr) {
+        console.error('OCR Processing failed:', ocrErr);
+        verificationStatus = 'rejected';
+        rejectionReason = 'Auto-verification failed: Unable to process the uploaded ID card image. Please upload a clear image in PNG or JPG format.';
+      }
+    } else {
+      verificationStatus = 'rejected';
+      rejectionReason = 'Auto-verification failed: A valid student ID card image is required.';
+    }
+
     student = new Student({
       name,
       email,
@@ -26,11 +84,18 @@ exports.registerStudent = async (req, res) => {
       schoolOrCollegeName,
       enrollmentNumber,
       idCardImage: idCardImage || 'default_path_or_url',
+      verificationStatus,
+      rejectionReason,
       skills
     });
 
     await student.save();
-    res.status(201).json({ message: 'Student registered successfully', studentId: student._id });
+    res.status(201).json({ 
+      message: 'Student registered successfully', 
+      studentId: student._id,
+      verificationStatus,
+      rejectionReason 
+    });
   } catch (error) {
     console.error('Error in registerStudent:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -196,4 +261,101 @@ exports.getAllStudents = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+// Re-upload Student ID Card (Retry Verification)
+exports.reuploadIdCard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { idCardImage } = req.body;
+
+    if (!idCardImage) {
+      return res.status(400).json({ message: 'A valid student ID card image is required.' });
+    }
+
+    const student = await Student.findById(id);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found.' });
+    }
+
+    // 100% Automated Verification Engine
+    let verificationStatus = 'pending';
+    let rejectionReason = '';
+
+    const academicDomains = ['.edu', '.ac.in', '.edu.in', '.res.in'];
+    const isAcademicEmail = academicDomains.some(domain => student.email.toLowerCase().endsWith(domain));
+
+    if (isAcademicEmail) {
+      verificationStatus = 'verified';
+    } else if (idCardImage && idCardImage.startsWith('data:image')) {
+      try {
+        const Tesseract = require('tesseract.js');
+        const base64Data = idCardImage.replace(/^data:image\/\w+;base64,/, '');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        
+        const ocrResult = await Tesseract.recognize(imageBuffer, 'eng');
+        const text = ocrResult.data.text || '';
+        const normalizedText = text.toLowerCase();
+        
+        // 1. Name Match
+        const normalizedName = student.name.toLowerCase();
+        const nameWords = normalizedName.split(/\s+/).filter(w => w.length > 2);
+        const nameMatched = normalizedText.includes(normalizedName) || 
+                            (nameWords.length > 0 && nameWords.every(w => normalizedText.includes(w)));
+                            
+        // 2. College Match
+        const normalizedCollege = student.schoolOrCollegeName.toLowerCase();
+        const collegeWords = normalizedCollege.split(/\s+/).filter(w => w.length > 3 && w !== 'college' && w !== 'university');
+        const collegeMatched = normalizedText.includes(normalizedCollege) || 
+                               (collegeWords.length > 0 && collegeWords.some(w => normalizedText.includes(w)));
+                               
+        // 3. Enrollment Match
+        const normalizedEnrollment = student.enrollmentNumber.toLowerCase();
+        const enrollmentMatched = normalizedText.includes(normalizedEnrollment);
+        
+        // Evaluate OCR checks
+        if (!nameMatched) {
+          verificationStatus = 'rejected';
+          rejectionReason = `Auto-verification failed: Could not detect your name "${student.name}" on the uploaded student ID card image. Please ensure the image is clear and matches your profile.`;
+        } else if (!collegeMatched) {
+          verificationStatus = 'rejected';
+          rejectionReason = `Auto-verification failed: Could not detect your institution name "${student.schoolOrCollegeName}" on the ID card. Please ensure the card text is clear.`;
+        } else if (!enrollmentMatched) {
+          verificationStatus = 'rejected';
+          rejectionReason = `Auto-verification failed: Enrollment number "${student.enrollmentNumber}" was not found on the ID card. Please ensure the number matches exactly.`;
+        } else {
+          verificationStatus = 'verified';
+        }
+      } catch (ocrErr) {
+        console.error('OCR Processing failed:', ocrErr);
+        verificationStatus = 'rejected';
+        rejectionReason = 'Auto-verification failed: Unable to process the uploaded ID card image. Please upload a clear image in PNG or JPG format.';
+      }
+    } else {
+      verificationStatus = 'rejected';
+      rejectionReason = 'Auto-verification failed: A valid student ID card image is required.';
+    }
+
+    student.idCardImage = idCardImage;
+    student.verificationStatus = verificationStatus;
+    student.rejectionReason = rejectionReason;
+
+    await student.save();
+
+    res.status(200).json({
+      message: 'ID Card re-uploaded and processed successfully',
+      student: {
+        _id: student._id,
+        name: student.name,
+        email: student.email,
+        verificationStatus,
+        rejectionReason,
+        idCardImage: student.idCardImage
+      }
+    });
+  } catch (error) {
+    console.error('Error in reuploadIdCard:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 

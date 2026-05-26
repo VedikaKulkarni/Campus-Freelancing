@@ -17,5 +17,6 @@ router.put('/client/:id', authController.updateClientProfile);
 router.get('/student/:id', authController.getStudentProfile);
 router.put('/student/:id', authController.updateStudentProfile);
 router.get('/students', authController.getAllStudents);
+router.post('/student/reupload/:id', authController.reuploadIdCard);
 
 module.exports = router;

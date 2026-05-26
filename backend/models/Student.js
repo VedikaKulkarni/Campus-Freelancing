@@ -34,6 +34,15 @@ const studentSchema = new mongoose.Schema({
     type: String, // Will store the URL/path to the uploaded image
     required: true,
   },
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'verified', 'rejected'],
+    default: 'pending',
+  },
+  rejectionReason: {
+    type: String,
+    default: '',
+  },
   skills: {
     type: [String],
     default: [],

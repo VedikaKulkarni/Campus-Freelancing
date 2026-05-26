@@ -17,6 +17,9 @@ export interface StudentProfile {
   projectLinks: ProjectLink[];
   stripeAccountId?: string;
   stripeOnboardingComplete?: boolean;
+  verificationStatus?: 'pending' | 'verified' | 'rejected';
+  rejectionReason?: string;
+  idCardImage?: string;
 }
 
 export interface Task {

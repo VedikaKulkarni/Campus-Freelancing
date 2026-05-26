@@ -369,6 +369,10 @@ const StudentDashboard = () => {
 
   // Apply Modal Open
   const handleOpenApplyModal = (task: Task) => {
+    if (studentProfile.verificationStatus !== 'verified') {
+      alert(`Access Restricted: Your account is currently in "${studentProfile.verificationStatus || 'pending'}" status. You can only apply for gigs after your student ID card is successfully verified.`);
+      return;
+    }
     setApplyingTask(task);
     setProposalText('');
     setSelectedLinksToSubmit([]);
@@ -727,6 +731,90 @@ const StudentDashboard = () => {
           </div>
         </header>
 
+        {/* Verification Status Alert Banners */}
+        {studentProfile.verificationStatus === 'pending' && (
+          <div className="verification-alert-banner pending bg-glass-amber" style={{
+            margin: '20px 30px 0',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '15px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            backdropFilter: 'blur(20px)',
+            color: 'var(--dash-text-h)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Clock className="spin-icon animate-pulse" size={18} style={{ color: '#f59e0b' }} />
+              <span style={{ fontSize: '13.5px', lineHeight: '1.5' }}>
+                <strong>🔍 ID Verification Pending:</strong> We are running a 100% automated OCR check on your uploaded student ID card. This normally takes about 10-30 seconds. Click refresh or reload the page shortly.
+              </span>
+            </div>
+            <button 
+              className="banner-refresh-btn" 
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#f59e0b',
+                color: '#000',
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '12px',
+                transition: 'all 0.2s'
+              }}
+            >
+              Refresh Status
+            </button>
+          </div>
+        )}
+
+        {studentProfile.verificationStatus === 'rejected' && (
+          <div className="verification-alert-banner rejected bg-glass-red" style={{
+            margin: '20px 30px 0',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '15px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            backdropFilter: 'blur(20px)',
+            color: 'var(--dash-text-h)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Info size={18} style={{ color: '#ef4444' }} />
+              <span style={{ fontSize: '13.5px', lineHeight: '1.5' }}>
+                <strong>⚠️ Auto-Verification Rejected:</strong> {studentProfile.rejectionReason || 'The uploaded student ID card could not be automatically validated.'} Please go to portfolio settings to re-upload.
+              </span>
+            </div>
+            <button 
+              className="banner-action-btn" 
+              onClick={() => setActiveTab('portfolio')}
+              style={{
+                background: '#ef4444',
+                color: '#fff',
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '12px',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Re-upload ID
+            </button>
+          </div>
+        )}
+
         {/* ============================================================== */}
         {/* SCREEN ROUTING                                                 */}
         {/* ============================================================== */}
@@ -752,6 +840,7 @@ const StudentDashboard = () => {
               skillFilter={skillFilter}
               setSkillFilter={setSkillFilter}
               handleOpenApplyModal={handleOpenApplyModal}
+              studentProfile={studentProfile}
             />
           )}
 
@@ -809,6 +898,10 @@ const StudentDashboard = () => {
               newLinkUrl={newLinkUrl}
               setNewLinkUrl={setNewLinkUrl}
               onStripeOnboard={handleStripeOnboard}
+              onProfileUpdate={(updatedProfile) => {
+                setStudentProfile(updatedProfile);
+                setProfileForm(updatedProfile);
+              }}
             />
           )}
 
