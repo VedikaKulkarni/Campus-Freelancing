@@ -2,17 +2,17 @@
 
 /* Dynamic variables for light/dark support inside dashboard */
 .dashboard-root.dark-theme {
-  --dash-bg: #0d0e12;
-  --dash-card-bg: rgba(22, 23, 29, 0.65);
-  --dash-border: rgba(46, 48, 58, 0.6);
-  --dash-text: #9ca3af;
-  --dash-text-h: #f3f4f6;
-  --dash-sidebar: rgba(18, 19, 24, 0.8);
-  --dash-topbar: rgba(13, 14, 18, 0.7);
-  --dash-shadow: rgba(0, 0, 0, 0.5) 0 8px 32px 0;
-  --input-bg: rgba(26, 27, 34, 0.8);
-  --accent-glow: rgba(192, 132, 252, 0.15);
-  --success-glow: rgba(16, 185, 129, 0.15);
+  --dash-bg: #151423; /* Beautiful, faint, soft cosmic violet-slate (looks stunning in low & high brightness) */
+  --dash-card-bg: rgba(11, 11, 20, 0.82); /* Deep cosmic slate cards for high contrast separation */
+  --dash-border: rgba(167, 139, 250, 0.22); /* Radiant soft lavender glow */
+  --dash-text: #cbd5e1; /* Luminous crisp slate-300 text for high-contrast readability */
+  --dash-text-h: #ffffff; /* Brilliant pure white headers */
+  --dash-sidebar: rgba(10, 10, 18, 0.88); /* Luminous sidebar contrast */
+  --dash-topbar: rgba(6, 6, 10, 0.75);
+  --dash-shadow: rgba(0, 0, 0, 0.65) 0 8px 32px 0;
+  --input-bg: rgba(9, 9, 15, 0.95);
+  --accent-glow: rgba(139, 92, 246, 0.28); /* Highly visible neon accents */
+  --success-glow: rgba(16, 185, 129, 0.28);
 }
 
 .dashboard-root.light-theme {
@@ -79,11 +79,13 @@
   border: 1px solid var(--dash-border);
   box-shadow: var(--dash-shadow);
   border-radius: 16px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .bg-glass:hover {
-  border-color: rgba(192, 132, 252, 0.25);
+  border-color: rgba(167, 139, 250, 0.45);
+  box-shadow: 0 12px 40px rgba(167, 139, 250, 0.14), var(--dash-shadow);
+  transform: translateY(-4px);
 }
 
 /* Sidebar Styling */
@@ -356,8 +358,10 @@
 
 .screen-title-banner h1 {
   font-size: 28px;
-  font-weight: 600;
-  color: var(--dash-text-h);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--dash-text-h) 40%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   margin: 0 0 6px;
   letter-spacing: -0.5px;
 }
@@ -794,11 +798,12 @@
   color: var(--dash-text-h);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-group-dash textarea:focus, .form-group-dash input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .modal-project-links-list {
@@ -1107,4 +1112,22 @@
   .dashboard-main-content {
     padding: 0 20px 20px;
   }
+}
+
+/* Custom rounded luminous cosmic scrollbars */
+.dark-theme ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.dark-theme ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+.dark-theme ::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.35);
+  border-radius: 8px;
+  border: 2px solid transparent;
+}
+.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.55);
 }
