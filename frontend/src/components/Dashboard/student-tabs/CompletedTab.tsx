@@ -5,13 +5,11 @@ import type { Application, Tab } from './types';
 interface CompletedTabProps {
   applications: Application[];
   setActiveTab: (tab: Tab) => void;
-  onChatWithClient: (clientId: string, clientName: string, taskId: string, taskTitle: string) => void;
 }
 
 export const CompletedTab: React.FC<CompletedTabProps> = ({
   applications,
-  setActiveTab,
-  onChatWithClient
+  setActiveTab
 }) => {
   const completedApps = applications.filter(a => a.status === 'Hired' && a.taskId?.status === 'Completed');
 

@@ -66,14 +66,6 @@ interface Task {
   skillsRequired: string[];
 }
 
-interface Transaction {
-  id: string;
-  taskTitle: string;
-  freelancerName: string;
-  amount: number;
-  status: 'In Escrow' | 'Released' | 'Refunding';
-  date: string;
-}
 
 const ClientDashboard = () => {
   const navigate = useNavigate();
@@ -101,7 +93,7 @@ const ClientDashboard = () => {
   // Tasks and Ledger States
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clientApplications, setClientApplications] = useState<any[]>([]);
-  const [loadingPayments, setLoadingPayments] = useState(false);
+
 
   // Stats Counters
   const [totalTasksCount, setTotalTasksCount] = useState(0);
@@ -232,7 +224,6 @@ const ClientDashboard = () => {
   const fetchClientApplications = async () => {
     if (!userId) return;
     try {
-      setLoadingPayments(true);
       const response = await fetch(`http://localhost:5000/api/applications/client/${userId}`);
       if (response.ok) {
         const data = await response.json();
@@ -240,8 +231,6 @@ const ClientDashboard = () => {
       }
     } catch (err) {
       console.error('Failed to fetch client applications:', err);
-    } finally {
-      setLoadingPayments(false);
     }
   };
 

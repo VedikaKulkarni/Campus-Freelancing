@@ -1,4 +1,29 @@
-export type Tab = 'overview' | 'explore' | 'applications' | 'portfolio' | 'ledger' | 'ongoing' | 'completed';
+export type Tab = 'overview' | 'explore' | 'applications' | 'portfolio' | 'ledger' | 'ongoing' | 'completed' | 'notes-marketplace';
+
+export interface NoteReview {
+  reviewerId: string;
+  reviewerName: string;
+  rating: number;
+  comment: string;
+  reviewedAt: string;
+}
+
+export interface Note {
+  _id: string;
+  title: string;
+  description: string;
+  subject: string;
+  price: number;
+  sellerId: string;
+  sellerName: string;
+  fileData?: string;
+  fileName: string;
+  fileType: string;
+  previewData: string[];
+  buyers: string[];
+  reviews: NoteReview[];
+  createdAt: string;
+}
 
 export interface ProjectLink {
   title: string;

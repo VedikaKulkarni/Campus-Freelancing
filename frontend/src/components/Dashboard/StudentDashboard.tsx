@@ -10,29 +10,10 @@ import {
   Menu, 
   X, 
   Bell, 
-  ChevronDown, 
   CheckCircle, 
-  Calendar, 
-  DollarSign, 
-  Search, 
-  Filter, 
-  ArrowRight, 
   Clock, 
-  Star, 
-  User, 
-  Mail, 
-  Building, 
-  Phone, 
-  TrendingUp, 
-  Send, 
-  Info,
-  Sliders,
-  Sparkles,
-  ShieldCheck,
-  Check,
-  ExternalLink,
-  Trash2,
-  Plus
+  BookOpen,
+  Info
 } from 'lucide-react';
 import './StudentDashboard.css';
 import { ChatDrawer } from '../Chat/ChatDrawer';
@@ -45,6 +26,7 @@ import { OngoingTab } from './student-tabs/OngoingTab';
 import { CompletedTab } from './student-tabs/CompletedTab';
 import { PortfolioTab } from './student-tabs/PortfolioTab';
 import { LedgerTab } from './student-tabs/LedgerTab';
+import { NotesMarketplaceTab } from './student-tabs/NotesMarketplaceTab';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -521,15 +503,7 @@ const StudentDashboard = () => {
     navigate('/');
   };
 
-  // Explore Filter Actions
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          task.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || task.category === selectedCategory;
-    const matchesSkill = !skillFilter.trim() || 
-                         task.skillsRequired.some(s => s.toLowerCase().includes(skillFilter.toLowerCase()));
-    return matchesSearch && matchesCategory && matchesSkill && task.status === 'Open';
-  });
+
 
   // Dynamic calculations
   const totalEarnings = applications
@@ -632,6 +606,14 @@ const StudentDashboard = () => {
             <CreditCard size={18} />
             <span>Earnings Ledger</span>
           </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'notes-marketplace' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('notes-marketplace'); setMobileMenuOpen(false); }}
+          >
+            <BookOpen size={18} style={{ color: '#ec4899' }} />
+            <span>Notes Marketplace</span>
+          </button>
         </nav>
 
         <div className="sidebar-user-footer">
@@ -670,6 +652,7 @@ const StudentDashboard = () => {
                 {activeTab === 'completed' && 'Completed Projects'}
                 {activeTab === 'portfolio' && 'Edit Student Portfolio'}
                 {activeTab === 'ledger' && 'Escrow Accounting'}
+                {activeTab === 'notes-marketplace' && 'Notes Marketplace'}
               </span>
             </div>
           </div>
@@ -871,14 +854,6 @@ const StudentDashboard = () => {
             <CompletedTab 
               applications={applications}
               setActiveTab={setActiveTab}
-              onChatWithClient={(clientId, clientName, taskId, taskTitle) => {
-                setActiveChatSession({
-                  targetId: clientId,
-                  targetName: clientName,
-                  taskId: taskId,
-                  taskTitle: taskTitle
-                });
-              }}
             />
           )}
 
@@ -910,6 +885,12 @@ const StudentDashboard = () => {
               applications={applications}
               totalEarnings={totalEarnings}
               activeEscrow={activeEscrow}
+            />
+          )}
+
+          {activeTab === 'notes-marketplace' && (
+            <NotesMarketplaceTab 
+              studentProfile={studentProfile}
             />
           )}
         </div>

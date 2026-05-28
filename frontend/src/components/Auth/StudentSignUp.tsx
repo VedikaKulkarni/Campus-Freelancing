@@ -16,7 +16,7 @@ const StudentSignUp = () => {
   
   const [institutionType, setInstitutionType] = useState('');
   const [fileName, setFileName] = useState('');
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

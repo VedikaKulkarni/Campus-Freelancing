@@ -45,6 +45,7 @@ app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/applications", require("./routes/applicationRoutes"));
 app.use("/api/chat", require("./routes/chatRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
+app.use("/api/notes", require("./routes/noteRoutes"));
 
 
 app.get("/", (req, res) => {

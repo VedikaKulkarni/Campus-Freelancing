@@ -210,7 +210,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {applications.length > 0 ? (
-              applications.slice(0, 3).map((app, index) => (
+              applications.slice(0, 3).map((app) => (
                 <div key={app._id} style={{ display: 'flex', gap: '16px', position: 'relative' }}>
                   <div style={{
                     width: '12px',
