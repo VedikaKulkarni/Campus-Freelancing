@@ -1,6 +1,7 @@
 import { User, Mail, Lock, Phone, BookOpen, GraduationCap, Hash, ImagePlus, ArrowRight, School } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { API_BASE_URL } from '../../config';
 
 const StudentSignUp = () => {
   const [formData, setFormData] = useState({
@@ -56,7 +57,7 @@ const StudentSignUp = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register-student', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register-student`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

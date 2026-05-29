@@ -7,10 +7,10 @@ import {
   Upload, 
   CheckCircle, 
   Info, 
-  TrendingUp,
-  X
+  TrendingUp
 } from 'lucide-react';
 import type { StudentProfile, Note, NoteReview } from './types';
+import { API_BASE_URL } from '../../../config';
 
 interface NotesMarketplaceTabProps {
   studentProfile: StudentProfile;
@@ -54,7 +54,7 @@ export const NotesMarketplaceTab: React.FC<NotesMarketplaceTabProps> = ({ studen
   const fetchNotes = async () => {
     try {
       setLoadingNotes(true);
-      const response = await fetch('http://localhost:5000/api/notes', {
+      const response = await fetch(`${API_BASE_URL}/api/notes`, {
         headers: {
           'x-user-id': userId || ''
         }
@@ -199,7 +199,7 @@ export const NotesMarketplaceTab: React.FC<NotesMarketplaceTabProps> = ({ studen
         previewData: extractedPreviews
       };
 
-      const response = await fetch('http://localhost:5000/api/notes', {
+      const response = await fetch(`${API_BASE_URL}/api/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -232,7 +232,7 @@ export const NotesMarketplaceTab: React.FC<NotesMarketplaceTabProps> = ({ studen
   // Handle Note details open (re-fetches detail to get full payload if purchased)
   const handleOpenDetails = async (noteId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/notes/${noteId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/notes/${noteId}`, {
         headers: {
           'x-user-id': userId || ''
         }
@@ -252,7 +252,7 @@ export const NotesMarketplaceTab: React.FC<NotesMarketplaceTabProps> = ({ studen
 
     setPurchasingNote(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/notes/${selectedNote._id}/purchase`, {
+      const response = await fetch(`${API_BASE_URL}/api/notes/${selectedNote._id}/purchase`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -300,7 +300,7 @@ export const NotesMarketplaceTab: React.FC<NotesMarketplaceTabProps> = ({ studen
 
     setSubmittingReview(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/notes/${selectedNote._id}/review`, {
+      const response = await fetch(`${API_BASE_URL}/api/notes/${selectedNote._id}/review`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

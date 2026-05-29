@@ -1,6 +1,7 @@
 import React from 'react';
 import { ExternalLink, Trash2, Plus } from 'lucide-react';
 import type { StudentProfile } from './types';
+import { API_BASE_URL } from '../../../config';
 
 interface PortfolioTabProps {
   studentProfile: StudentProfile;
@@ -63,7 +64,7 @@ export const PortfolioTab: React.FC<PortfolioTabProps> = ({
     setReuploading(true);
     const userId = sessionStorage.getItem('userId');
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/student/reupload/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/student/reupload/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idCardImage: newIdCard })

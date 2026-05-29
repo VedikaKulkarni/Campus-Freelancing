@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import './StudentDashboard.css';
 import { ChatDrawer } from '../Chat/ChatDrawer';
+import { API_BASE_URL } from '../../config';
 
 import type { Tab, ProjectLink, StudentProfile, Task, Application } from './student-tabs/types';
 import { OverviewTab } from './student-tabs/OverviewTab';
@@ -114,7 +115,7 @@ const StudentDashboard = () => {
       const stripeOnboard = params.get('stripe_onboard');
       if (stripeOnboard === 'success' && userId) {
         try {
-          const response = await fetch('http://localhost:5000/api/payments/check-onboard-status', {
+          const response = await fetch(`${API_BASE_URL}/api/payments/check-onboard-status`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ studentId: userId })
@@ -130,7 +131,7 @@ const StudentDashboard = () => {
             window.history.replaceState({}, document.title, window.location.pathname);
             
             // Reload profile data to get updated Stripe Connect status
-            const profileRes = await fetch(`http://localhost:5000/api/auth/student/${userId}`);
+            const profileRes = await fetch(`${API_BASE_URL}/api/auth/student/${userId}`);
             if (profileRes.ok) {
               const freshProfile = await profileRes.json();
               setStudentProfile(freshProfile);
@@ -150,7 +151,7 @@ const StudentDashboard = () => {
   const handleStripeOnboard = async () => {
     if (!userId) return;
     try {
-      const response = await fetch('http://localhost:5000/api/payments/onboard-student', {
+      const response = await fetch(`${API_BASE_URL}/api/payments/onboard-student`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: userId })
@@ -178,7 +179,7 @@ const StudentDashboard = () => {
 
       try {
         setLoadingProfile(true);
-        const response = await fetch(`http://localhost:5000/api/auth/student/${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/auth/student/${userId}`);
         if (response.ok) {
           const data = await response.json();
           setStudentProfile(data);
@@ -201,7 +202,7 @@ const StudentDashboard = () => {
     const fetchTasks = async () => {
       try {
         setLoadingTasks(true);
-        const response = await fetch('http://localhost:5000/api/tasks');
+        const response = await fetch(`${API_BASE_URL}/api/tasks`);
         if (response.ok) {
           const data = await response.json();
           setTasks(data);
@@ -233,7 +234,7 @@ const StudentDashboard = () => {
       if (shouldShowLoading) {
         setLoadingApps(true);
       }
-      const response = await fetch(`http://localhost:5000/api/applications/student/${userId}`);
+      const response = await fetch(`${API_BASE_URL}/api/applications/student/${userId}`);
       if (response.ok) {
         const data = await response.json();
         setApplications(data);
@@ -267,7 +268,7 @@ const StudentDashboard = () => {
 
     setSavingProfile(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/student/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/student/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileForm)
@@ -303,7 +304,7 @@ const StudentDashboard = () => {
     setNewLinkUrl('');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/student/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/student/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedForm)
@@ -332,7 +333,7 @@ const StudentDashboard = () => {
     setProfileForm(updatedForm);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/student/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/student/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedForm)
@@ -413,7 +414,7 @@ const StudentDashboard = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/applications', {
+      const response = await fetch(`${API_BASE_URL}/api/applications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(applicationPayload)
@@ -452,7 +453,7 @@ const StudentDashboard = () => {
         });
 
         // Fetch updated applications in the background to ensure absolute accuracy
-        fetch(`http://localhost:5000/api/applications/student/${userId}`)
+        fetch(`${API_BASE_URL}/api/applications/student/${userId}`)
           .then(res => {
             if (res.ok) return res.json();
             throw new Error('API failed');

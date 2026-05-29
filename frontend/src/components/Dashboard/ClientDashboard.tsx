@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import './ClientDashboard.css';
 import { ChatDrawer } from '../Chat/ChatDrawer';
+import { API_BASE_URL } from '../../config';
 
 // Active Menu Tabs
 type Tab = 'overview' | 'create-task' | 'manage-tasks' | 'students' | 'payments' | 'profile';
@@ -142,7 +143,7 @@ const ClientDashboard = () => {
     const fetchClientProfile = async () => {
       try {
         setLoadingProfile(true);
-        const response = await fetch(`http://localhost:5000/api/auth/client/${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/auth/client/${userId}`);
         if (response.ok) {
           const data = await response.json();
           setClientProfile(data);
@@ -198,7 +199,7 @@ const ClientDashboard = () => {
 
       if (paymentStatus === 'success' && appId) {
         try {
-          const response = await fetch('http://localhost:5000/api/payments/confirm-escrow-manual', {
+          const response = await fetch(`${API_BASE_URL}/api/payments/confirm-escrow-manual`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ applicationId: appId })
@@ -224,7 +225,7 @@ const ClientDashboard = () => {
   const fetchClientApplications = async () => {
     if (!userId) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/applications/client/${userId}`);
+      const response = await fetch(`${API_BASE_URL}/api/applications/client/${userId}`);
       if (response.ok) {
         const data = await response.json();
         setClientApplications(data);
@@ -243,7 +244,7 @@ const ClientDashboard = () => {
   // Release Escrow Payout - Transfer platform balance to student Connected Express bank
   const handleReleaseEscrow = async (appId: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/payments/release-escrow', {
+      const response = await fetch(`${API_BASE_URL}/api/payments/release-escrow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ applicationId: appId })
@@ -265,7 +266,7 @@ const ClientDashboard = () => {
   // Fund Escrow - Redirect client to Stripe Checkout card payment
   const handlePayProject = async (app: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/payments/fund-escrow', {
+      const response = await fetch(`${API_BASE_URL}/api/payments/fund-escrow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -292,7 +293,7 @@ const ClientDashboard = () => {
 
     const fetchClientTasks = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/tasks/client/${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/tasks/client/${userId}`);
         if (response.ok) {
           const data = await response.json();
           const mapped = data.map((t: any) => ({
@@ -324,7 +325,7 @@ const ClientDashboard = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/students');
+        const response = await fetch(`${API_BASE_URL}/api/auth/students`);
         if (response.ok) {
           const data = await response.json();
           const mapped = data.map((s: any) => ({
@@ -366,7 +367,7 @@ const ClientDashboard = () => {
 
     setSavingProfile(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/client/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/client/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileForm)
@@ -437,7 +438,7 @@ const ClientDashboard = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/tasks', {
+      const response = await fetch(`${API_BASE_URL}/api/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskPayload)
@@ -491,7 +492,7 @@ const ClientDashboard = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/tasks/${taskId}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Completed' })
@@ -535,7 +536,7 @@ const ClientDashboard = () => {
 
     try {
       setLoadingApplicants(true);
-      const response = await fetch(`http://localhost:5000/api/applications/task/${task.id}`);
+      const response = await fetch(`${API_BASE_URL}/api/applications/task/${task.id}`);
       if (response.ok) {
         const data = await response.json();
         setTaskApplicants(data);
@@ -551,7 +552,7 @@ const ClientDashboard = () => {
   const handleHireStudent = async (appId: string) => {
     if (!reviewingTask) return;
     try {
-      const response = await fetch('http://localhost:5000/api/payments/fund-escrow', {
+      const response = await fetch(`${API_BASE_URL}/api/payments/fund-escrow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -583,7 +584,7 @@ const ClientDashboard = () => {
 
   const handleChatWithStudent = async (task: Task) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/applications/task/${task.id}`);
+      const response = await fetch(`${API_BASE_URL}/api/applications/task/${task.id}`);
       if (response.ok) {
         const apps = await response.json();
         const hiredApp = apps.find((a: any) => a.status === 'Hired');

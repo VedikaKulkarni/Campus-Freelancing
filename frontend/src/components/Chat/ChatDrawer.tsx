@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { MessageSquare, Send, X, Calendar, Video, Clock } from 'lucide-react';
 import './ChatDrawer.css';
+import { API_BASE_URL } from '../../config';
 
 interface Participant {
   userId: string;
@@ -80,7 +81,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
     if (!userId) return;
 
     if (!socketInstance) {
-      socketInstance = io('http://localhost:5000');
+      socketInstance = io(API_BASE_URL);
     }
     socketRef.current = socketInstance;
 
@@ -129,7 +130,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
   const fetchConversations = async () => {
     if (!userId) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/chat/conversations/${userId}`);
+      const response = await fetch(`${API_BASE_URL}/api/chat/conversations/${userId}`);
       if (response.ok) {
         const data = await response.json();
         setConversations(data);
@@ -142,7 +143,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
   // Fetch Messages for Selected Conversation
   const fetchMessages = async (conversationId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/chat/conversations/${conversationId}/messages`);
+      const response = await fetch(`${API_BASE_URL}/api/chat/conversations/${conversationId}/messages`);
       if (response.ok) {
         const data = await response.json();
         setMessages(data);
@@ -172,7 +173,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
       };
 
       try {
-        const response = await fetch('http://localhost:5000/api/chat/conversations', {
+        const response = await fetch(`${API_BASE_URL}/api/chat/conversations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -220,7 +221,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
       socketRef.current.emit('send_message', payload);
     } else {
       // Fallback: Send message over HTTP REST API if socket is down
-      fetch(`http://localhost:5000/api/chat/conversations/${activeConversation._id}/messages`, {
+      fetch(`${API_BASE_URL}/api/chat/conversations/${activeConversation._id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -259,7 +260,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
       socketRef.current.emit('schedule_meeting', payload);
     } else {
       // HTTP fallback
-      fetch(`http://localhost:5000/api/chat/conversations/${activeConversation._id}/meetings`, {
+      fetch(`${API_BASE_URL}/api/chat/conversations/${activeConversation._id}/meetings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

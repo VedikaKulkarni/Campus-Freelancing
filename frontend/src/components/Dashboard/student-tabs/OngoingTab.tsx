@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, ExternalLink, Info, X, Image, Video, CheckCircle } from 'lucide-react';
 import type { Application, Tab } from './types';
+import { API_BASE_URL } from '../../../config';
 
 interface OngoingTabProps {
   applications: Application[];
@@ -75,7 +76,7 @@ export const OngoingTab: React.FC<OngoingTabProps> = ({
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/applications/${submittingApp._id}/submit-deliverables`, {
+      const response = await fetch(`${API_BASE_URL}/api/applications/${submittingApp._id}/submit-deliverables`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
