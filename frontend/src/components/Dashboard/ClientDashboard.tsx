@@ -271,8 +271,7 @@ const ClientDashboard = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           applicationId: app._id,
-          taskBudget: app.taskId?.budget || 100,
-          taskTitle: app.taskId?.title || 'Milestone Gigs'
+          redirectOrigin: window.location.origin
         })
       });
       const data = await response.json();
@@ -557,8 +556,7 @@ const ClientDashboard = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           applicationId: appId,
-          taskBudget: reviewingTask.budget,
-          taskTitle: reviewingTask.title
+          redirectOrigin: window.location.origin
         })
       });
       const data = await response.json();

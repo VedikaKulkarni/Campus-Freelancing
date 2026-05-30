@@ -154,7 +154,10 @@ const StudentDashboard = () => {
       const response = await fetch(`${API_BASE_URL}/api/payments/onboard-student`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId: userId })
+        body: JSON.stringify({ 
+          studentId: userId,
+          redirectOrigin: window.location.origin
+        })
       });
       const data = await response.json();
       if (response.ok && data.url) {

@@ -25,7 +25,8 @@ const verifyStripe = (res) => {
 router.post('/onboard-student', async (req, res) => {
   if (!verifyStripe(res)) return;
   
-  const { studentId } = req.body;
+  const { studentId, redirectOrigin } = req.body;
+  const origin = redirectOrigin || req.headers.origin || 'http://localhost:5173';
   try {
     const student = await Student.findById(studentId);
     if (!student) {
@@ -64,7 +65,7 @@ router.post('/onboard-student', async (req, res) => {
           await student.save();
           
           return res.json({ 
-            url: `http://localhost:5173/student-dashboard?stripe_onboard=success&accountId=${stripeAccountId}&simulated=true` 
+            url: `${origin}/student-dashboard?stripe_onboard=success&accountId=${stripeAccountId}&simulated=true` 
           });
         } else {
           throw stripeError; // propagate other errors
@@ -75,14 +76,14 @@ router.post('/onboard-student', async (req, res) => {
     // Generate Hosted Stripe Onboarding Link
     if (stripeAccountId && stripeAccountId.startsWith('mock_co_')) {
       return res.json({ 
-        url: `http://localhost:5173/student-dashboard?stripe_onboard=success&accountId=${stripeAccountId}&simulated=true` 
+        url: `${origin}/student-dashboard?stripe_onboard=success&accountId=${stripeAccountId}&simulated=true` 
       });
     }
 
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
-      refresh_url: `http://localhost:5173/student-dashboard?stripe_onboard=refresh`,
-      return_url: `http://localhost:5173/student-dashboard?stripe_onboard=success&accountId=${stripeAccountId}`,
+      refresh_url: `${origin}/student-dashboard?stripe_onboard=refresh`,
+      return_url: `${origin}/student-dashboard?stripe_onboard=success&accountId=${stripeAccountId}`,
       type: 'account_onboarding',
     });
 
@@ -144,12 +145,21 @@ router.post('/check-onboard-status', async (req, res) => {
 router.post('/fund-escrow', async (req, res) => {
   if (!verifyStripe(res)) return;
 
-  const { applicationId, taskBudget, taskTitle } = req.body;
+  const { applicationId, redirectOrigin } = req.body;
+  const origin = redirectOrigin || req.headers.origin || 'http://localhost:5173';
   try {
-    const application = await Application.findById(applicationId);
+    const application = await Application.findById(applicationId).populate('taskId');
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
     }
+
+    const task = application.taskId;
+    if (!task) {
+      return res.status(404).json({ message: 'Task associated with this application not found' });
+    }
+
+    const actualBudget = task.budget;
+    const actualTitle = task.title;
 
     // Create session holding funds on Platform balance
     const session = await stripe.checkout.sessions.create({
@@ -158,16 +168,16 @@ router.post('/fund-escrow', async (req, res) => {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: `Milestone Deposit: ${taskTitle}`,
+            name: `Milestone Deposit: ${actualTitle}`,
             description: 'Funds will be securely locked in Stripe Escrow safeguard.',
           },
-          unit_amount: Math.round(parseFloat(taskBudget) * 100), // budget in cents
+          unit_amount: Math.round(parseFloat(actualBudget) * 100), // budget in cents
         },
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `http://localhost:5173/client-dashboard?payment=success&appId=${applicationId}`,
-      cancel_url: `http://localhost:5173/client-dashboard?payment=cancel`,
+      success_url: `${origin}/client-dashboard?payment=success&appId=${applicationId}`,
+      cancel_url: `${origin}/client-dashboard?payment=cancel`,
       metadata: { applicationId },
     });
 
