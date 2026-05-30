@@ -972,7 +972,8 @@ const ClientDashboard = () => {
                         value={taskForm.budget} 
                         onChange={handleTaskChange} 
                         required 
-                        min="20"
+                        min="0.01"
+                        step="0.01"
                       />
                     </div>
                   </div>
