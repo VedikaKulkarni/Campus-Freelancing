@@ -236,7 +236,7 @@ const ClientDashboard = () => {
   };
 
   useEffect(() => {
-    if (userId && (activeTab === 'payments' || activeTab === 'overview')) {
+    if (userId) {
       fetchClientApplications();
     }
   }, [userId, activeTab]);
@@ -623,6 +623,33 @@ const ClientDashboard = () => {
     return matchesSearch && matchesSkill;
   });
 
+
+  // Dynamic notifications computed from student deliverable submissions
+  const clientNotifications = [
+    ...clientApplications
+      .filter(app => app.status === 'Hired' && app.deliverables?.submittedAt && app.paymentStatus === 'Held in Escrow')
+      .map(app => ({
+        id: `deliverable-${app._id}`,
+        type: 'deliverable',
+        icon: 'green',
+        title: 'Deliverable Submitted',
+        text: `<strong>${app.studentName}</strong> submitted deliverables for task: <strong>${app.taskId?.title || 'Milestone'}</strong>.`,
+        time: new Date(app.deliverables.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        unread: true
+      })),
+    {
+      id: 'default-1',
+      type: 'general',
+      icon: 'blue',
+      title: 'Profile Verified',
+      text: 'Your corporate client identity verification completed successfully.',
+      time: 'Yesterday',
+      unread: false
+    }
+  ];
+
+  const hasUnreadNotifications = clientNotifications.some(n => n.unread);
+  
   return (
     <div className={`dashboard-root ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
       
@@ -748,37 +775,27 @@ const ClientDashboard = () => {
             <div className="notification-wrapper">
               <button className="icon-badge-btn" onClick={() => setNotificationsOpen(!notificationsOpen)}>
                 <Bell size={20} />
-                <span className="dot-indicator"></span>
+                {hasUnreadNotifications && <span className="dot-indicator"></span>}
               </button>
 
               {notificationsOpen && (
                 <div className="notifications-dropdown-menu">
                   <div className="nd-header">
                     <h4>Notifications</h4>
-                    <span>2 New</span>
+                    <span>{clientNotifications.filter(n => n.unread).length} New</span>
                   </div>
-                  <div className="nd-body">
-                    <div className="nd-item unread">
-                      <div className="nd-icon blue"><Users size={14} /></div>
-                      <div className="nd-text">
-                        <p><strong>Liam Chen</strong> applied to your project: Setup MongoDB API.</p>
-                        <span>5 minutes ago</span>
+                  <div className="nd-body" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                    {clientNotifications.map(n => (
+                      <div key={n.id} className={`nd-item ${n.unread ? 'unread' : ''}`}>
+                        <div className={`nd-icon ${n.icon}`}>
+                          {n.type === 'deliverable' ? <CheckCircle size={14} /> : <Users size={14} />}
+                        </div>
+                        <div className="nd-text">
+                          <p dangerouslySetInnerHTML={{ __html: n.text }}></p>
+                          <span>{n.time}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="nd-item unread">
-                      <div className="nd-icon green"><DollarSign size={14} /></div>
-                      <div className="nd-text">
-                        <p>Milestone payment of $225 for Glassmorphic Landing Page secured in escrow.</p>
-                        <span>3 hours ago</span>
-                      </div>
-                    </div>
-                    <div className="nd-item">
-                      <div className="nd-icon purple"><CheckCircle size={14} /></div>
-                      <div className="nd-text">
-                        <p>Your profile verification completed successfully.</p>
-                        <span>Yesterday</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                   <div className="nd-footer">
                     <button onClick={() => setNotificationsOpen(false)}>Mark all as read</button>
@@ -1153,13 +1170,19 @@ const ClientDashboard = () => {
                                   >
                                     Chat with Student
                                   </button>
-                                  <button 
-                                    className="btn-table-action" 
-                                    style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', borderColor: '#7c3aed', color: '#fff', fontWeight: 600 }}
-                                    onClick={() => handleCloseAndCompleteTask(task.id)}
-                                  >
-                                    Finalize & Close
-                                  </button>
+                                  {(() => {
+                                    const assocApp = clientApplications.find(a => (a.taskId?._id === task.id || a.taskId === task.id) && a.status === 'Hired');
+                                    const hasSubmittedDeliverables = assocApp && assocApp.deliverables?.submittedAt;
+                                    return hasSubmittedDeliverables ? (
+                                      <button 
+                                        className="btn-table-action" 
+                                        style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', borderColor: '#7c3aed', color: '#fff', fontWeight: 600 }}
+                                        onClick={() => handleCloseAndCompleteTask(task.id)}
+                                      >
+                                        Finalize & Close
+                                      </button>
+                                    ) : null;
+                                  })()}
                                 </>
                               )}
                               {task.status === 'Completed' && (

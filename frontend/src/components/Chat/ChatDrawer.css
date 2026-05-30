@@ -1,20 +1,20 @@
 /* Premium Glassmorphic Chat Drawer Stylesheet */
 
 :root {
-  --chat-bg: rgba(18, 18, 28, 0.7);
-  --chat-panel-bg: rgba(25, 25, 40, 0.5);
+  --chat-bg: #12121c;
+  --chat-panel-bg: #191928;
   --chat-border: rgba(255, 255, 255, 0.08);
   --chat-text: #e2e8f0;
   --chat-text-muted: #94a3b8;
   --chat-accent: #3b82f6;
   --chat-accent-glow: rgba(59, 130, 246, 0.35);
   --chat-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
-  --chat-glass-blur: blur(24px);
+  --chat-glass-blur: none;
 }
 
 .light-theme {
-  --chat-bg: rgba(255, 255, 255, 0.85);
-  --chat-panel-bg: rgba(245, 247, 250, 0.65);
+  --chat-bg: #ffffff;
+  --chat-panel-bg: #f1f5f9;
   --chat-border: rgba(0, 0, 0, 0.06);
   --chat-text: #1e293b;
   --chat-text-muted: #64748b;
