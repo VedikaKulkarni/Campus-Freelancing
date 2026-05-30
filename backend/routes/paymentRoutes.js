@@ -205,12 +205,20 @@ router.post('/confirm-escrow-manual', async (req, res) => {
 
     // Transition original Task status to "In Progress"
     const task = await Task.findById(app.taskId);
+    let taskBudget = 100;
     if (task) {
       task.status = 'In Progress';
       await task.save();
+      taskBudget = task.budget;
     }
 
-    res.json({ message: 'Escrow payment captured & verified successfully.', app });
+    const populatedApp = await Application.findById(applicationId).populate('taskId');
+
+    res.json({ 
+      message: 'Escrow payment captured & verified successfully.', 
+      app: populatedApp,
+      budget: taskBudget
+    });
   } catch (error) {
     console.error('Manual escrow confirmation error:', error);
     res.status(500).json({ message: 'Escrow verification failed', error: error.message });
