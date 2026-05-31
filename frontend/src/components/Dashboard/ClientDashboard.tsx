@@ -204,7 +204,7 @@ const ClientDashboard = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ applicationId: appId })
           });
-          const data = await response.json();
+          await response.json();
           if (response.ok) {
             alert('💳 Escrow Secured! The project budget is securely locked in safeguards. Student freelancer is officially hired.');
             // Reload list immediately
