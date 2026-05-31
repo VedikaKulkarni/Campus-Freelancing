@@ -282,7 +282,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 0;
+  padding: 14px 0;
   background: var(--dash-topbar);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -290,7 +290,7 @@
   position: sticky;
   top: 0;
   z-index: 90;
-  margin-bottom: 30px;
+  margin-bottom: 15px;
 }
 
 .topbar-left {
@@ -524,7 +524,7 @@
 }
 
 .screen-title-banner {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .screen-title-banner h1 {
