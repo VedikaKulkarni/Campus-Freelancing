@@ -18,6 +18,7 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   }
 });
+app.set("io", io);
 
 
 mongoose.connect(process.env.MONGO_URL)

@@ -203,6 +203,15 @@ router.post('/confirm-escrow-manual', async (req, res) => {
     app.escrowFundedAt = new Date();
     await app.save();
 
+    // Emit real-time update to student
+    const io = req.app.get("io");
+    if (io && app.studentId) {
+      io.to(app.studentId.toString()).emit("realtime_update", {
+        type: "hired_status_updated",
+        data: { applicationId: app._id, status: 'Hired' }
+      });
+    }
+
     // Transition original Task status to "In Progress"
     const task = await Task.findById(app.taskId);
     let taskBudget = 100;
@@ -280,6 +289,15 @@ router.post('/release-escrow', async (req, res) => {
     app.escrowReleasedAt = new Date();
     await app.save();
 
+    // Emit real-time update to student
+    const io = req.app.get("io");
+    if (io && app.studentId) {
+      io.to(app.studentId.toString()).emit("realtime_update", {
+        type: "escrow_released",
+        data: { applicationId: app._id }
+      });
+    }
+
     // Mark task as Completed
     task.status = 'Completed';
     await task.save();
@@ -321,6 +339,15 @@ router.post('/webhook', async (req, res) => {
         app.stripePaymentIntentId = session.payment_intent;
         app.escrowFundedAt = new Date();
         await app.save();
+
+        // Emit real-time update to student
+        const io = req.app.get("io");
+        if (io && app.studentId) {
+          io.to(app.studentId.toString()).emit("realtime_update", {
+            type: "hired_status_updated",
+            data: { applicationId: app._id, status: 'Hired' }
+          });
+        }
 
         const task = await Task.findById(app.taskId);
         if (task) {

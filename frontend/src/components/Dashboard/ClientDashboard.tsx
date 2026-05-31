@@ -287,33 +287,32 @@ const ClientDashboard = () => {
   };
 
   // Load client's tasks from database
-  useEffect(() => {
+  const fetchClientTasks = async () => {
     if (!userId || userRole !== 'client') return;
-
-    const fetchClientTasks = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/tasks/client/${userId}`);
-        if (response.ok) {
-          const data = await response.json();
-          const mapped = data.map((t: any) => ({
-            id: t._id,
-            title: t.title,
-            category: t.category,
-            budget: t.budget,
-            applicants: t.applicants || 0,
-            status: t.status,
-            deadline: t.deadline,
-            description: t.description,
-            skillsRequired: t.skillsRequired || []
-          }));
-          setTasks(mapped);
-          setTotalTasksCount(mapped.length);
-        }
-      } catch (err) {
-        console.error('Failed to fetch client tasks from backend', err);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/tasks/client/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        const mapped = data.map((t: any) => ({
+          id: t._id,
+          title: t.title,
+          category: t.category,
+          budget: t.budget,
+          applicants: t.applicants || 0,
+          status: t.status,
+          deadline: t.deadline,
+          description: t.description,
+          skillsRequired: t.skillsRequired || []
+        }));
+        setTasks(mapped);
+        setTotalTasksCount(mapped.length);
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch client tasks from backend', err);
+    }
+  };
 
+  useEffect(() => {
     fetchClientTasks();
   }, [userId, userRole]);
 
@@ -1706,6 +1705,13 @@ const ClientDashboard = () => {
         userName={clientProfile.name}
         activeChatSession={activeChatSession}
         onClearActiveChatSession={() => setActiveChatSession(null)}
+        onRealtimeUpdate={(type, data) => {
+          console.log('Client received realtime update:', type, data);
+          if (type === 'new_application' || type === 'deliverables_submitted') {
+            fetchClientApplications();
+            fetchClientTasks();
+          }
+        }}
       />
 
     </div>

@@ -49,6 +49,7 @@ interface ChatDrawerProps {
   userName: string;
   activeChatSession: ActiveChatSession | null;
   onClearActiveChatSession: () => void;
+  onRealtimeUpdate?: (type: string, data: any) => void;
 }
 
 // Keep a single persistent socket instance outside of render to prevent double-connections in React dev mode
@@ -59,7 +60,8 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
   userRole,
   userName,
   activeChatSession,
-  onClearActiveChatSession
+  onClearActiveChatSession,
+  onRealtimeUpdate
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -124,12 +126,21 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
       fetchConversations();
     });
 
+    // Socket real-time general dashboard updates listener
+    socketRef.current.on('realtime_update', (payload: { type: string; data: any }) => {
+      console.log('Received realtime dashboard update:', payload);
+      if (onRealtimeUpdate) {
+        onRealtimeUpdate(payload.type, payload.data);
+      }
+    });
+
     // Fetch initial conversations list
     fetchConversations();
 
     return () => {
       if (socketRef.current) {
         socketRef.current.off('new_message');
+        socketRef.current.off('realtime_update');
       }
     };
   }, [userId]);

@@ -12,10 +12,12 @@ router.post('/', async (req, res) => {
 
     // 1. Validate and resolve Task
     let validTaskId = null;
+    let validClientId = null;
     if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
       const task = await Task.findById(taskId);
       if (task) {
         validTaskId = task._id;
+        validClientId = task.clientId;
         // Increment applicants count
         task.applicants = (task.applicants || 0) + 1;
         await task.save();
@@ -65,6 +67,16 @@ router.post('/', async (req, res) => {
     });
 
     await application.save();
+
+    // Emit real-time notification to client
+    const io = req.app.get("io");
+    if (io && validClientId) {
+      io.to(validClientId.toString()).emit("realtime_update", {
+        type: "new_application",
+        data: { taskId: validTaskId, studentName }
+      });
+    }
+
     res.status(201).json({ message: 'Application submitted successfully!', application });
   } catch (error) {
     console.error('Error submitting application:', error);
@@ -163,6 +175,19 @@ router.put('/:id/submit-deliverables', async (req, res) => {
     };
 
     await application.save();
+
+    // Emit real-time notification to client
+    const io = req.app.get("io");
+    if (io) {
+      const task = await Task.findById(application.taskId);
+      if (task && task.clientId) {
+        io.to(task.clientId.toString()).emit("realtime_update", {
+          type: "deliverables_submitted",
+          data: { applicationId: application._id, taskTitle: task.title, studentName: application.studentName }
+        });
+      }
+    }
+
     res.status(200).json({ message: 'Deliverables submitted successfully!', application });
   } catch (error) {
     console.error('Error submitting deliverables:', error);

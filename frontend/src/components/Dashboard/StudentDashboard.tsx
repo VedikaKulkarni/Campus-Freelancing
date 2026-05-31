@@ -201,25 +201,25 @@ const StudentDashboard = () => {
   }, [userId, userRole]);
 
   // Load Tasks from Database
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setLoadingTasks(true);
-        const response = await fetch(`${API_BASE_URL}/api/tasks`);
-        if (response.ok) {
-          const data = await response.json();
-          setTasks(data);
-        } else {
-          throw new Error('Tasks API failed');
-        }
-      } catch (err) {
-        console.warn('Backend tasks unreachable, loading empty board', err);
-        setTasks([]);
-      } finally {
-        setLoadingTasks(false);
+  const fetchTasks = async () => {
+    try {
+      setLoadingTasks(true);
+      const response = await fetch(`${API_BASE_URL}/api/tasks`);
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data);
+      } else {
+        throw new Error('Tasks API failed');
       }
-    };
+    } catch (err) {
+      console.warn('Backend tasks unreachable, loading empty board', err);
+      setTasks([]);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTasks();
   }, [userId]);
 
@@ -979,6 +979,13 @@ const StudentDashboard = () => {
         userName={studentProfile.name}
         activeChatSession={activeChatSession}
         onClearActiveChatSession={() => setActiveChatSession(null)}
+        onRealtimeUpdate={(type, data) => {
+          console.log('Student received realtime update:', type, data);
+          if (type === 'hired_status_updated' || type === 'escrow_released') {
+            fetchApplications();
+            fetchTasks();
+          }
+        }}
       />
 
     </div>
