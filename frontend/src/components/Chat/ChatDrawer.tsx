@@ -76,6 +76,15 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
 
+  // Ref to track isOpen state to avoid stale closures in socket event listeners
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    if (isOpen) {
+      setUnreadCount(0); // Clear unread badge when user opens the chat drawer
+    }
+  }, [isOpen]);
+
   // Initialize Socket.io connection
   useEffect(() => {
     if (!userId) return;
@@ -92,16 +101,22 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
     socketRef.current.on('new_message', (message: Message) => {
       // 1. If message belongs to currently open active conversation, append to list
       setActiveConversation(currActive => {
-        if (currActive && currActive._id === message.conversationId) {
+        const isDrawerOpen = isOpenRef.current;
+        const isCurrentConv = currActive && currActive._id === message.conversationId;
+
+        if (isCurrentConv) {
           setMessages(prev => {
             // Avoid duplicate appends
             if (prev.some(m => m._id === message._id)) return prev;
             return [...prev, message];
           });
-        } else {
-          // If drawer is closed or user is in a different chat, bump notifications
+        }
+
+        // If the drawer is closed OR if the message is for a different conversation, bump unread count
+        if (!isDrawerOpen || !isCurrentConv) {
           setUnreadCount(prev => prev + 1);
         }
+
         return currActive;
       });
 
