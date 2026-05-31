@@ -209,6 +209,7 @@ const ClientDashboard = () => {
             alert('💳 Escrow Secured! The project budget is securely locked in safeguards. Student freelancer is officially hired.');
             // Reload list immediately
             fetchClientApplications();
+            fetchClientTasks();
           }
           // Clear URL parameters
           window.history.replaceState({}, document.title, window.location.pathname);
