@@ -300,7 +300,14 @@ export const OngoingTab: React.FC<OngoingTabProps> = ({
           background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(10px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
-          <div className="modal-content-wrapper bg-glass" style={{ width: '90%', maxWidth: '650px', padding: '30px', position: 'relative' }}>
+          <div className="modal-content-wrapper bg-glass" style={{
+            width: '90%',
+            maxWidth: '650px',
+            padding: '30px',
+            position: 'relative',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
             <button className="modal-close-btn" style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: 'var(--dash-text)', cursor: 'pointer' }} onClick={() => setSubmissionModalOpen(false)}>
               <X size={20} />
             </button>
